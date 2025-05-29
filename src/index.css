@@ -44,6 +44,45 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
+  .dark {
+    --background: 224 71.4% 4.1%;
+    --foreground: 210 20% 98%;
+
+    --card: 224 71.4% 4.1%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 224 71.4% 4.1%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 210 20% 98%;
+    --primary-foreground: 220.9 39.3% 11%;
+
+    --secondary: 215 27.9% 16.9%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+
+    --accent: 215 27.9% 16.9%;
+    --accent-foreground: 210 20% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    --ring: 216 12.2% 83.9%;
+
+    --sidebar-background: 224 71.4% 4.1%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 210 20% 98%;
+    --sidebar-primary-foreground: 224 71.4% 4.1%;
+    --sidebar-accent: 215 27.9% 16.9%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 215 27.9% 16.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
 }
 
 @layer base {
@@ -52,10 +91,15 @@
   }
 
   body {
-    @apply bg-gray-50 text-foreground font-nunito;
+    @apply bg-gray-50 dark:bg-gray-900 text-foreground font-nunito transition-colors;
     background-image: 
       radial-gradient(circle at 20px 20px, rgba(0,0,0,0.05) 1px, transparent 1px);
     background-size: 40px 40px;
+  }
+
+  .dark body {
+    background-image: 
+      radial-gradient(circle at 20px 20px, rgba(255,255,255,0.05) 1px, transparent 1px);
   }
 }
 
@@ -68,6 +112,14 @@
     box-shadow: 
       0 4px 6px -1px rgba(0, 0, 0, 0.1),
       0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .dark .sketch-border {
+    background: #1f2937;
+    border-color: #4b5563;
+    box-shadow: 
+      0 4px 6px -1px rgba(0, 0, 0, 0.3),
+      0 2px 4px -1px rgba(0, 0, 0, 0.2);
   }
   
   .sketch-border::before {
@@ -83,6 +135,10 @@
     transform: rotate(-1deg);
   }
 
+  .dark .sketch-border::before {
+    border-color: #374151;
+  }
+
   .sketch-border::after {
     content: '';
     position: absolute;
@@ -96,11 +152,22 @@
     transform: rotate(0.5deg);
   }
 
+  .dark .sketch-border::after {
+    border-color: #4b5563;
+  }
+
   .doodle-shadow {
     box-shadow: 
       3px 3px 0px #e5e7eb,
       6px 6px 0px #d1d5db,
       9px 9px 0px #9ca3af;
+  }
+
+  .dark .doodle-shadow {
+    box-shadow: 
+      3px 3px 0px #374151,
+      6px 6px 0px #4b5563,
+      9px 9px 0px #6b7280;
   }
 
   .wobble-1 { transform: rotate(1deg); }
@@ -115,11 +182,22 @@
     transition: all 0.2s ease;
   }
 
+  .dark .hand-drawn-btn {
+    border-color: #9ca3af;
+    background: #1f2937;
+  }
+
   .hand-drawn-btn:hover {
     transform: translateY(-2px);
     box-shadow: 
       2px 2px 0px #374151,
       4px 4px 0px #6b7280;
+  }
+
+  .dark .hand-drawn-btn:hover {
+    box-shadow: 
+      2px 2px 0px #9ca3af,
+      4px 4px 0px #d1d5db;
   }
 
   .scribble-underline {
