@@ -42,15 +42,19 @@ const Profile = () => {
     setLoading(true);
     supabase
       .from("users")
-      .select("username, avatar_url, reputation, created_at")
+      .select("username, avatar_url, bio, reputation, created_at")
       .eq("address", address)
       .single()
       .then(({ data, error }) => {
+        if (error) {
+          console.error("Supabase fetch error:", error);
+        }
         if (data) {
           setProfile({
             ...DEFAULT_USER,
             username: data.username || "",
             avatar_url: data.avatar_url || "",
+            bio: data.bio || "",
             rating: data.reputation || 0,
             joinDate: data.created_at ? new Date(data.created_at).toLocaleString('default', { month: 'long', year: 'numeric' }) : "",
           });
@@ -71,33 +75,40 @@ const Profile = () => {
       avatar_url: avatarUrl,
       bio,
     });
-    if (!error) {
-      const { data } = await supabase
-        .from("users")
-        .select("username, avatar_url, bio, reputation, created_at")
-        .eq("address", address)
-        .single();
-      if (data) {
-        setProfile({
-          ...profile,
-          username: data.username || "",
-          avatar_url: data.avatar_url || "",
-          bio: data.bio || "",
-          rating: data.reputation || 0,
-          joinDate: data.created_at
-            ? new Date(data.created_at).toLocaleString("default", {
-                month: "long",
-                year: "numeric",
-              })
-            : "",
-        });
-        setUsername(data.username || "");
-        setBio(data.bio || "");
-        setAvatarUrl(data.avatar_url || "");
-      }
-      setIsEditing(false);
-      navigate("/profile");
+    if (error) {
+      console.error("Supabase upsert error:", error);
+      setSaving(false);
+      return;
     }
+    const { data, error: fetchError } = await supabase
+      .from("users")
+      .select("username, avatar_url, bio, reputation, created_at")
+      .eq("address", address)
+      .single();
+    if (fetchError) {
+      console.error("Supabase fetch error:", fetchError);
+      setSaving(false);
+      return;
+    }
+    if (data) {
+      setProfile({
+        ...profile,
+        username: data.username || "",
+        avatar_url: data.avatar_url || "",
+        bio: data.bio || "",
+        rating: data.reputation || 0,
+        joinDate: data.created_at
+          ? new Date(data.created_at).toLocaleString("default", {
+              month: "long",
+              year: "numeric",
+            })
+          : "",
+      });
+      setUsername(data.username || "");
+      setBio(data.bio || "");
+      setAvatarUrl(data.avatar_url || "");
+    }
+    setIsEditing(false);
     setSaving(false);
   };
 

@@ -1,9 +1,11 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, Users, Clock, Wallet, Calendar, ArrowUp } from "lucide-react";
+import { useState } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Link } from "react-router-dom";
 
 const Dashboard = () => {
   const dashboardData = {
@@ -67,11 +69,126 @@ const Dashboard = () => {
     ]
   };
 
+  // My Projects state
+  const [projects, setProjects] = useState([
+    { title: "Sample Project 1", description: "Booked React Bootcamp", status: "In Escrow" },
+    { title: "Sample Project 2", description: "Booked Design Session", status: "Completed" },
+  ]);
+  const [showModal, setShowModal] = useState(false);
+  const [newProject, setNewProject] = useState({ title: "", description: "", status: "In Escrow" });
+
+  // Transaction modal state
+  const [showTransactions, setShowTransactions] = useState(false);
+  // Manage service modal state
+  const [manageService, setManageService] = useState<{ open: boolean; service?: any }>({ open: false });
+  // Join session modal state
+  const [joinSession, setJoinSession] = useState<{ open: boolean; session?: any }>({ open: false });
+  // Edit project modal state
+  const [editProject, setEditProject] = useState<{ open: boolean; idx?: number }>({ open: false });
+
+  const handleAddProject = () => {
+    if (!newProject.title || !newProject.description) return;
+    setProjects([...projects, newProject]);
+    setNewProject({ title: "", description: "", status: "In Escrow" });
+    setShowModal(false);
+  };
+
+  const handleDeleteProject = (idx: number) => {
+    setProjects(projects.filter((_, i) => i !== idx));
+  };
+  const handleEditProject = (idx: number, updated: any) => {
+    setProjects(projects.map((p, i) => (i === idx ? updated : p)));
+    setEditProject({ open: false });
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-800 mb-2">Dashboard</h1>
         <p className="text-xl text-gray-600">Welcome back! Here's your teaching overview.</p>
+      </div>
+
+      {/* My Projects Section */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-gray-800">My Projects</h2>
+          <Button onClick={() => setShowModal(true)} className="rounded-xl border-2 border-dashed border-gray-400 bg-white text-gray-900">+ Add Project</Button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.map((project, idx) => (
+            <Card key={idx} className="sketch-border bg-white p-6">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg font-semibold">{project.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 mb-2">{project.description}</p>
+                <Badge className={project.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>{project.status}</Badge>
+                <div className="mt-4 flex gap-2">
+                  <Link to={`/service/demo-${idx + 1}`} className="block w-full">
+                    <Button className="w-full rounded-xl border-2 border-dashed border-blue-400 bg-white text-blue-700">View Details</Button>
+                  </Link>
+                  <Button onClick={() => setEditProject({ open: true, idx })} className="rounded-xl border-2 border-dashed border-gray-400 bg-white text-gray-900">Edit</Button>
+                  <Button onClick={() => handleDeleteProject(idx)} className="rounded-xl border-2 border-dashed border-red-400 bg-white text-red-700">Delete</Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Dialog open={showModal} onOpenChange={setShowModal}>
+          <DialogContent>
+            <h3 className="text-xl font-bold mb-4">Add New Project</h3>
+            <input
+              className="w-full mb-2 p-2 border border-dashed border-gray-300 rounded"
+              placeholder="Project Title"
+              value={newProject.title}
+              onChange={e => setNewProject({ ...newProject, title: e.target.value })}
+            />
+            <textarea
+              className="w-full mb-2 p-2 border border-dashed border-gray-300 rounded"
+              placeholder="Project Description"
+              value={newProject.description}
+              onChange={e => setNewProject({ ...newProject, description: e.target.value })}
+            />
+            <select
+              className="w-full mb-4 p-2 border border-dashed border-gray-300 rounded"
+              value={newProject.status}
+              onChange={e => setNewProject({ ...newProject, status: e.target.value })}
+            >
+              <option value="In Escrow">In Escrow</option>
+              <option value="Completed">Completed</option>
+            </select>
+            <Button onClick={handleAddProject} className="w-full rounded-xl border-2 border-dashed border-blue-400">Add Project</Button>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={editProject.open} onOpenChange={open => setEditProject({ open })}>
+          <DialogContent>
+            <h3 className="text-xl font-bold mb-4">Edit Project</h3>
+            {editProject.idx !== undefined && (
+              <>
+                <input
+                  className="w-full mb-2 p-2 border border-dashed border-gray-300 rounded"
+                  placeholder="Project Title"
+                  value={projects[editProject.idx].title}
+                  onChange={e => handleEditProject(editProject.idx!, { ...projects[editProject.idx!], title: e.target.value })}
+                />
+                <textarea
+                  className="w-full mb-2 p-2 border border-dashed border-gray-300 rounded"
+                  placeholder="Project Description"
+                  value={projects[editProject.idx].description}
+                  onChange={e => handleEditProject(editProject.idx!, { ...projects[editProject.idx!], description: e.target.value })}
+                />
+                <select
+                  className="w-full mb-4 p-2 border border-dashed border-gray-300 rounded"
+                  value={projects[editProject.idx].status}
+                  onChange={e => handleEditProject(editProject.idx!, { ...projects[editProject.idx!], status: e.target.value })}
+                >
+                  <option value="In Escrow">In Escrow</option>
+                  <option value="Completed">Completed</option>
+                </select>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Stats Overview */}
@@ -159,9 +276,22 @@ const Dashboard = () => {
                 </div>
               </div>
             ))}
-            <Button variant="outline" className="w-full rounded-xl border-2">
+            <Button className="w-full rounded-xl border-2 border-dashed border-gray-400 bg-white text-gray-900 mt-4" onClick={() => setShowTransactions(true)}>
               View All Transactions
             </Button>
+            <Dialog open={showTransactions} onOpenChange={setShowTransactions}>
+              <DialogContent>
+                <h3 className="text-xl font-bold mb-4">All Transactions</h3>
+                <ul className="space-y-2">
+                  {dashboardData.recentEarnings.map((earning, idx) => (
+                    <li key={idx} className="flex justify-between border-b pb-2">
+                      <span>{earning.service} ({earning.date})</span>
+                      <span className="font-bold text-primary">+{earning.amount} SKILL</span>
+                    </li>
+                  ))}
+                </ul>
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
 
@@ -199,16 +329,29 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="rounded-xl">
-                      Manage
-                    </Button>
-                    <Button size="sm" variant="outline" className="rounded-xl">
-                      View Details
-                    </Button>
+                    <Button className="rounded-xl border-2 border-dashed border-gray-400 bg-white text-gray-900" onClick={() => setManageService({ open: true, service })}>Manage</Button>
+                    <Link to={`/service/demo-active-${index + 1}`} className="block w-full">
+                      <Button className="rounded-xl border-2 border-dashed border-blue-400 bg-white text-blue-700 w-full">View Details</Button>
+                    </Link>
                   </div>
                 </div>
               ))}
             </div>
+            <Dialog open={manageService.open} onOpenChange={open => setManageService({ open })}>
+              <DialogContent>
+                <h3 className="text-xl font-bold mb-4">Manage Service</h3>
+                {manageService.service && (
+                  <>
+                    <p><strong>Title:</strong> {manageService.service.title}</p>
+                    <p><strong>Students:</strong> {manageService.service.students}</p>
+                    <p><strong>Next Session:</strong> {manageService.service.nextSession}</p>
+                    <p><strong>Status:</strong> {manageService.service.status}</p>
+                    <p><strong>Earnings:</strong> {manageService.service.earnings}</p>
+                    <Button className="mt-4 w-full bg-green-500 text-white">Mark as Completed</Button>
+                  </>
+                )}
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
       </div>
@@ -230,7 +373,7 @@ const Dashboard = () => {
                     <h3 className="font-semibold text-gray-800 mb-1">{session.title}</h3>
                     <p className="text-sm text-gray-600">{session.time}</p>
                   </div>
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge className={`text-xs ${session.type === 'Group Session' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
                     {session.type}
                   </Badge>
                 </div>
@@ -240,11 +383,25 @@ const Dashboard = () => {
                   <p>Students: {session.students}</p>
                 </div>
                 
-                <Button size="sm" className="w-full rounded-xl">
+                <Button className="w-full rounded-xl bg-blue-500 text-white mt-2" onClick={() => setJoinSession({ open: true, session })}>
                   Join Session
                 </Button>
               </div>
             ))}
+            <Dialog open={joinSession.open} onOpenChange={open => setJoinSession({ open })}>
+              <DialogContent>
+                <h3 className="text-xl font-bold mb-4">Join Session</h3>
+                {joinSession.session && (
+                  <>
+                    <p><strong>Title:</strong> {joinSession.session.title}</p>
+                    <p><strong>Time:</strong> {joinSession.session.time}</p>
+                    <p><strong>Duration:</strong> {joinSession.session.duration}</p>
+                    <p><strong>Type:</strong> {joinSession.session.type}</p>
+                    <Button className="mt-4 w-full bg-green-500 text-white">Confirm Join</Button>
+                  </>
+                )}
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>

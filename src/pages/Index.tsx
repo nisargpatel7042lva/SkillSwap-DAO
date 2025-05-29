@@ -61,7 +61,7 @@ const Index = () => {
             How SkillSwap Works ⚡
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
             <Card className="sketch-border bg-white p-8 text-center transform rotate-1 hover:rotate-0 transition-transform">
               <CardContent className="p-0">
                 <div className="w-16 h-16 bg-blue-100 rounded-2xl border-2 border-dashed border-blue-300 flex items-center justify-center mx-auto mb-6 transform -rotate-3">
@@ -94,6 +94,30 @@ const Index = () => {
                 <h3 className="text-xl font-semibold text-gray-800 mb-4">Earn & Learn 💰</h3>
                 <p className="text-gray-600">
                   Earn tokens by sharing your skills or exchange them to learn new ones. Everyone benefits in our circular economy.
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card className="sketch-border bg-white p-8 text-center transform rotate-1 hover:rotate-0 transition-transform">
+              <CardContent className="p-0">
+                <div className="w-16 h-16 bg-yellow-100 rounded-2xl border-2 border-dashed border-yellow-300 flex items-center justify-center mx-auto mb-6 transform rotate-2">
+                  <span className="text-3xl">🔒</span>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">Book a service</h3>
+                <p className="text-gray-600">
+                  Funds are locked in escrow automatically for trust and safety. Your payment is secure until the service is delivered.
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card className="sketch-border bg-white p-8 text-center transform -rotate-1 hover:rotate-0 transition-transform">
+              <CardContent className="p-0">
+                <div className="w-16 h-16 bg-green-100 rounded-2xl border-2 border-dashed border-green-300 flex items-center justify-center mx-auto mb-6 transform -rotate-2">
+                  <span className="text-3xl">⚡</span>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">Rate & Release Payment</h3>
+                <p className="text-gray-600">
+                  After rating the service, payment is released instantly and trustlessly to the provider. No middlemen, no delays.
                 </p>
               </CardContent>
             </Card>
