@@ -1,35 +1,21 @@
-
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, User, Wallet, Menu } from "lucide-react";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const Header = () => {
-  const [isConnected, setIsConnected] = useState(false);
-
-  const handleWalletConnect = () => {
-    setIsConnected(!isConnected);
-  };
-
   return (
     <header className="bg-white border-b-4 border-dashed border-gray-300 sticky top-0 z-50 shadow-lg transition-colors">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3 group">
-            <div className="relative">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl border-2 border-dashed border-gray-400 flex items-center justify-center transform group-hover:rotate-12 transition-transform">
-                <span className="text-2xl font-bold text-blue-600">S</span>
-              </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-200 rounded-full border border-gray-300 flex items-center justify-center text-xs transform rotate-12">
-                ✨
-              </div>
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800 scribble-underline">SkillSwap</h1>
-              <p className="text-xs text-gray-500 -mt-1 transform -rotate-1">DAO</p>
-            </div>
+            <img
+              src="/SkillSwap DAO Logo Design.png"
+              alt="SkillSwap DAO Logo"
+              className="w-16 h-16 object-contain rounded-2xl border-2 border-dashed border-gray-400 bg-white mr-6"
+            />
           </Link>
 
           {/* Navigation */}
@@ -62,23 +48,12 @@ const Header = () => {
           {/* User Actions */}
           <div className="flex items-center space-x-4">
             <Link to="/profile">
-              <Button variant="ghost" size="sm" className="border-2 border-dashed border-transparent hover:border-gray-300 rounded-xl">
+              <Button className="border-2 border-dashed border-transparent hover:border-gray-300 rounded-xl">
                 <User className="w-4 h-4 mr-2" />
                 Profile
               </Button>
             </Link>
-            
-            <Button
-              onClick={handleWalletConnect}
-              className={`hand-drawn-btn px-6 ${
-                isConnected
-                  ? "bg-green-100 hover:bg-green-200 text-green-700 border-green-400"
-                  : "bg-blue-500 hover:bg-blue-600 text-white border-blue-600"
-              }`}
-            >
-              <Wallet className="w-4 h-4 mr-2" />
-              {isConnected ? "Connected 🔗" : "Connect Wallet 💼"}
-            </Button>
+            <ConnectButton />
           </div>
         </div>
       </div>
