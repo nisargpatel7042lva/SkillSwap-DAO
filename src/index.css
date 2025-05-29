@@ -52,26 +52,89 @@
   }
 
   body {
-    @apply bg-background text-foreground font-nunito;
+    @apply bg-gray-50 text-foreground font-nunito;
+    background-image: 
+      radial-gradient(circle at 20px 20px, rgba(0,0,0,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
 }
 
 @layer components {
   .sketch-border {
-    border: 2px solid #e2e8f0;
+    border: 2px dashed #cbd5e1;
     border-radius: 1rem;
     position: relative;
+    background: white;
+    box-shadow: 
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
   
   .sketch-border::before {
     content: '';
     position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    border: 1px dashed #cbd5e1;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border: 1px solid #e2e8f0;
     border-radius: 1rem;
+    opacity: 0.5;
+    transform: rotate(-1deg);
+  }
+
+  .sketch-border::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    border: 1px dotted #cbd5e1;
+    border-radius: 0.8rem;
     opacity: 0.3;
+    transform: rotate(0.5deg);
+  }
+
+  .doodle-shadow {
+    box-shadow: 
+      3px 3px 0px #e5e7eb,
+      6px 6px 0px #d1d5db,
+      9px 9px 0px #9ca3af;
+  }
+
+  .wobble-1 { transform: rotate(1deg); }
+  .wobble-2 { transform: rotate(-1deg); }
+  .wobble-3 { transform: rotate(0.5deg); }
+
+  .hand-drawn-btn {
+    border: 2px solid #374151;
+    border-radius: 12px;
+    position: relative;
+    background: white;
+    transition: all 0.2s ease;
+  }
+
+  .hand-drawn-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      2px 2px 0px #374151,
+      4px 4px 0px #6b7280;
+  }
+
+  .scribble-underline {
+    position: relative;
+  }
+
+  .scribble-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10'%3E%3Cpath d='M0,8 Q25,2 50,6 T100,4' stroke='%234f46e5' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+    background-repeat: repeat-x;
+    background-size: 100px 10px;
   }
 }
