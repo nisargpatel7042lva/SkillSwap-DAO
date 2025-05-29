@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAccount, useEnsName } from "wagmi";
 import { supabase } from "@/integrations/supabase/client";
 import { AvatarUpload } from "@/components/ui/avatar-upload";
+import { useNavigate } from "react-router-dom";
 
 const DEFAULT_USER = {
   username: "",
@@ -29,6 +30,7 @@ const Profile = () => {
   const [profile, setProfile] = useState(DEFAULT_USER);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const navigate = useNavigate();
 
   // Editable fields
   const [username, setUsername] = useState("");
@@ -94,6 +96,7 @@ const Profile = () => {
         setAvatarUrl(data.avatar_url || "");
       }
       setIsEditing(false);
+      navigate("/profile");
     }
     setSaving(false);
   };

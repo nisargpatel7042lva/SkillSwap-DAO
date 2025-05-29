@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -10,6 +9,11 @@ const About = () => {
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16">
         <div className="text-center max-w-4xl mx-auto">
+          <img
+            src="/SkillSwap DAO Logo Design.png"
+            alt="SkillSwap DAO Logo"
+            className="mx-auto mb-6 w-32 h-32 object-contain rounded-2xl border-2 border-dashed border-gray-400 bg-white"
+          />
           <h1 className="text-5xl font-bold text-gray-800 mb-6">
             Building the Future of
             <span className="text-primary block mt-2">Skill Exchange</span>

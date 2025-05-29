@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -83,6 +82,54 @@ const Marketplace = () => {
         rating: 4.9
       },
       category: "Design"
+    },
+    {
+      id: "101",
+      title: "Web3 Smart Contract Bootcamp",
+      description: "Learn to write, deploy, and audit smart contracts on Ethereum using Solidity and Hardhat.",
+      price: "100 SKILL",
+      provider: {
+        name: "Priya Sharma",
+        avatar: "/placeholder-avatar.jpg",
+        rating: 4.9
+      },
+      category: "Programming"
+    },
+    {
+      id: "102",
+      title: "Cartoon Sketching for Beginners",
+      description: "Master the basics of cartoon sketching and character design with fun, hands-on lessons.",
+      price: "30 SKILL",
+      provider: {
+        name: "Ravi Patel",
+        avatar: "/placeholder-avatar.jpg",
+        rating: 4.8
+      },
+      category: "Design"
+    },
+    {
+      id: "103",
+      title: "Digital Marketing 101",
+      description: "Kickstart your marketing career with SEO, social media, and content strategy essentials.",
+      price: "50 SKILL",
+      provider: {
+        name: "Aisha Khan",
+        avatar: "/placeholder-avatar.jpg",
+        rating: 4.7
+      },
+      category: "Marketing"
+    },
+    {
+      id: "104",
+      title: "Creative Writing Workshop",
+      description: "Unlock your creativity and learn storytelling techniques from published authors.",
+      price: "40 SKILL",
+      provider: {
+        name: "John Lee",
+        avatar: "/placeholder-avatar.jpg",
+        rating: 4.9
+      },
+      category: "Writing"
     }
   ];
 
