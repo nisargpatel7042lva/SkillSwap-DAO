@@ -1,81 +1,125 @@
-
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ArrowUp, Check, Clock, Star, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAccount } from "wagmi";
 
 const ServiceDetail = () => {
   const { id } = useParams();
+  const { address, isConnected } = useAccount();
+  const [service, setService] = useState<any>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [studentsEnrolled, setStudentsEnrolled] = useState(0);
+  const [maxStudents, setMaxStudents] = useState(0);
+  const [enrolling, setEnrolling] = useState(false);
+  const [alreadyEnrolled, setAlreadyEnrolled] = useState(false);
 
-  // Mock data for the service
-  const service = {
-    id: "1",
-    title: "React Development Bootcamp",
-    description: "Master modern React development with this comprehensive bootcamp. You'll learn everything from basic components to advanced patterns like custom hooks, context API, and performance optimization. This course includes hands-on projects, code reviews, and personalized mentorship.",
-    fullDescription: `
-      This intensive React development bootcamp is designed for both beginners and intermediate developers who want to master modern React development. Over the course of 8 weeks, you'll build real-world applications and learn industry best practices.
+  // Fetch service and enrollment data
+  useEffect(() => {
+    if (!id) return;
+    setLoaded(false);
+    // Fetch service details
+    supabase
+      .from("skills")
+      .select("*, user_id")
+      .eq("id", id)
+      .single()
+      .then(({ data }) => {
+        setService(data || null);
+        setLoaded(true);
+        if (data) {
+          setMaxStudents(data.max_students || 60);
+        }
+      });
+    // Fetch enrollments count
+    supabase
+      .from("bookings")
+      .select("id", { count: "exact" })
+      .eq("skill_id", id)
+      .then(({ count }) => {
+        setStudentsEnrolled(count || 0);
+      });
+    // Check if user already enrolled
+    if (address) {
+      supabase
+        .from("users")
+        .select("id")
+        .eq("address", address)
+        .single()
+        .then(({ data: user }) => {
+          if (user) {
+            supabase
+              .from("bookings")
+              .select("id")
+              .eq("skill_id", id)
+              .eq("requester_id", user.id)
+              .then(({ data }) => {
+                setAlreadyEnrolled(!!data && data.length > 0);
+              });
+          }
+        });
+    }
 
-      What you'll learn:
-      • React fundamentals and modern hooks
-      • State management with Context API and Redux
-      • Component composition and reusability
-      • Performance optimization techniques
-      • Testing with Jest and React Testing Library
-      • Deployment strategies and CI/CD
+    // Real-time subscription for bookings
+    const channel = supabase
+      .channel('realtime:bookings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `skill_id=eq.${id}` }, (payload) => {
+        // Refetch enrollments count on any change
+        supabase
+          .from("bookings")
+          .select("id", { count: "exact" })
+          .eq("skill_id", id)
+          .then(({ count }) => {
+            setStudentsEnrolled(count || 0);
+          });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id]);
 
-      This bootcamp includes:
-      • 24 hours of live instruction
-      • Code reviews and personalized feedback
-      • Access to exclusive Discord community
-      • Certificate of completion
-      • 3 months of post-bootcamp support
-    `,
-    price: "50 SKILL",
-    provider: {
-      name: "Alex Chen",
-      avatar: "/placeholder-avatar.jpg",
-      rating: 4.9,
-      reviewCount: 127,
-      completedProjects: 89,
-      yearsExperience: 6,
-      bio: "Senior Frontend Developer at a Fortune 500 company with 6+ years of experience in React ecosystem. Passionate about teaching and helping developers grow their skills."
-    },
-    category: "Programming",
-    duration: "8 weeks",
-    level: "Beginner to Intermediate",
-    studentsEnrolled: 45,
-    maxStudents: 60,
-    features: [
-      "Live interactive sessions",
-      "1-on-1 mentorship",
-      "Code review included",
-      "Project portfolio building",
-      "Job placement assistance",
-      "Lifetime community access"
-    ],
-    reviews: [
-      {
-        name: "Sarah M.",
-        rating: 5,
-        comment: "Absolutely fantastic! Alex's teaching style is clear and engaging. I landed my first React job thanks to this bootcamp.",
-        date: "2 weeks ago"
-      },
-      {
-        name: "David L.",
-        rating: 5,
-        comment: "Best investment I've made in my career. The hands-on projects really helped solidify my understanding.",
-        date: "1 month ago"
-      },
-      {
-        name: "Maria G.",
-        rating: 4,
-        comment: "Great content and support. Would recommend to anyone serious about learning React.",
-        date: "2 months ago"
-      }
-    ]
+  // Enroll handler
+  const handleEnroll = async () => {
+    if (!isConnected || enrolling || alreadyEnrolled) return;
+    setEnrolling(true);
+    // Get user id
+    const { data: user } = await supabase
+      .from("users")
+      .select("id")
+      .eq("address", address)
+      .single();
+    if (!user) {
+      setEnrolling(false);
+      return;
+    }
+    // Insert booking
+    const { error } = await supabase.from("bookings").insert({
+      skill_id: id,
+      requester_id: user.id,
+      status: "pending",
+      payment_status: "unpaid",
+    });
+    if (!error) {
+      setAlreadyEnrolled(true);
+      setStudentsEnrolled((n) => n + 1);
+    }
+    setEnrolling(false);
   };
+
+  if (!service && loaded) return (
+    <div className="p-8 text-center text-gray-500">
+      <div className="mb-4">Service not found.</div>
+      <Link to="/marketplace">
+        <Button className="bg-blue-500 text-white px-6 py-2 rounded-xl">Back to Marketplace</Button>
+      </Link>
+    </div>
+  );
+  if (!service) return <div className="p-8 text-center text-gray-500">Loading...</div>;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -174,11 +218,11 @@ const ServiceDetail = () => {
           {/* Pricing Card */}
           <Card className="sketch-border sticky top-24">
             <CardHeader>
-              <CardTitle className="text-3xl font-bold text-primary">{service.price}</CardTitle>
+              <CardTitle className="text-3xl font-bold text-primary">{service.price} SKILL</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button className="w-full py-3 rounded-xl text-lg">
-                Enroll Now
+              <Button className="w-full py-3 rounded-xl text-lg" onClick={handleEnroll} disabled={enrolling || alreadyEnrolled || studentsEnrolled >= maxStudents}>
+                {alreadyEnrolled ? "Enrolled" : enrolling ? "Enrolling..." : studentsEnrolled >= maxStudents ? "Full" : "Enroll Now"}
               </Button>
               <Button variant="outline" className="w-full py-3 rounded-xl border-2">
                 Add to Wishlist
@@ -197,7 +241,7 @@ const ServiceDetail = () => {
                   </div>
                   <div className="flex justify-between">
                     <span>Students:</span>
-                    <span>{service.studentsEnrolled}/{service.maxStudents}</span>
+                    <span>{studentsEnrolled}/{maxStudents}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Category:</span>

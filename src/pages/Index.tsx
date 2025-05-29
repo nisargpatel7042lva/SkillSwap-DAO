@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,7 +35,11 @@ const Index = () => {
           
           <div className="relative">
             <div className="w-full h-96 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-3xl border-4 border-dashed border-gray-300 flex items-center justify-center transform rotate-2 doodle-shadow">
-              <div className="text-8xl opacity-60 transform -rotate-2">🤝</div>
+              <img
+                src="/SkillSwap DAO Logo Design.png"
+                alt="SkillSwap DAO Logo"
+                className="w-56 h-56 object-contain opacity-80 transform -rotate-2"
+              />
             </div>
             <div className="absolute -top-4 -left-4 w-20 h-20 bg-green-100 rounded-2xl border-2 border-dashed border-green-300 flex items-center justify-center transform -rotate-12">
               <span className="text-3xl">💡</span>

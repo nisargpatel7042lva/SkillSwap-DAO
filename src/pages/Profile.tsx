@@ -67,9 +67,32 @@ const Profile = () => {
       address,
       username,
       avatar_url: avatarUrl,
+      bio,
     });
     if (!error) {
-      setProfile((prev) => ({ ...prev, username, avatar_url: avatarUrl }));
+      const { data } = await supabase
+        .from("users")
+        .select("username, avatar_url, bio, reputation, created_at")
+        .eq("address", address)
+        .single();
+      if (data) {
+        setProfile({
+          ...profile,
+          username: data.username || "",
+          avatar_url: data.avatar_url || "",
+          bio: data.bio || "",
+          rating: data.reputation || 0,
+          joinDate: data.created_at
+            ? new Date(data.created_at).toLocaleString("default", {
+                month: "long",
+                year: "numeric",
+              })
+            : "",
+        });
+        setUsername(data.username || "");
+        setBio(data.bio || "");
+        setAvatarUrl(data.avatar_url || "");
+      }
       setIsEditing(false);
     }
     setSaving(false);
