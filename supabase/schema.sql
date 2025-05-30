@@ -39,4 +39,12 @@ CREATE TABLE IF NOT EXISTS ratings (
   rating integer CHECK (rating >= 1 AND rating <= 5),
   comment text,
   created_at timestamp with time zone DEFAULT timezone('utc', now())
+);
+
+-- Projects table
+CREATE TABLE IF NOT EXISTS projects (
+  id serial PRIMARY KEY,
+  title text NOT NULL,
+  description text,
+  status text
 ); 

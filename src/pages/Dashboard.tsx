@@ -3,102 +3,150 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, Users, Clock, Wallet, Calendar, ArrowUp } from "lucide-react";
-import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+type StatsType = {
+  totalEarnings: number;
+  activeServices: number;
+  totalStudents: number;
+  avgRating: number;
+};
+
+type Earning = { date: string; amount: number; service: string };
+type Service = { title: string; students: number; nextSession: string; status: string; earnings: string };
+type Session = { title: string; time: string; duration: string; students: number; type: string };
+type Project = { id: number; title: string; description: string; status: string; due_date?: string; user_id?: string };
+
+const USER_ID = "demo-user-id";
 
 const Dashboard = () => {
-  const dashboardData = {
-    stats: {
-      totalEarnings: 450,
-      activeServices: 5,
-      totalStudents: 73,
-      avgRating: 4.9
-    },
-    recentEarnings: [
-      { date: "Today", amount: 25, service: "React Bootcamp" },
-      { date: "Yesterday", amount: 50, service: "TypeScript Fundamentals" },
-      { date: "2 days ago", amount: 35, service: "React Bootcamp" },
-      { date: "3 days ago", amount: 40, service: "Code Review Session" }
-    ],
-    activeServices: [
-      {
-        title: "React Development Bootcamp",
-        students: 45,
-        nextSession: "Today, 2:00 PM",
-        status: "active",
-        earnings: "200 SKILL"
-      },
-      {
-        title: "TypeScript Fundamentals",
-        students: 28,
-        nextSession: "Tomorrow, 10:00 AM",
-        status: "active",
-        earnings: "150 SKILL"
-      },
-      {
-        title: "Code Review Sessions",
-        students: 12,
-        nextSession: "Friday, 3:00 PM",
-        status: "active",
-        earnings: "100 SKILL"
-      }
-    ],
-    upcomingSessions: [
-      {
-        title: "React Bootcamp - Week 3",
-        time: "Today, 2:00 PM",
-        duration: "2 hours",
-        students: 45,
-        type: "Group Session"
-      },
-      {
-        title: "1-on-1 Code Review",
-        time: "Tomorrow, 10:00 AM",
-        duration: "1 hour", 
-        students: 1,
-        type: "Individual"
-      },
-      {
-        title: "TypeScript Q&A",
-        time: "Thursday, 4:00 PM",
-        duration: "1.5 hours",
-        students: 28,
-        type: "Group Session"
-      }
-    ]
-  };
+  const [stats, setStats] = useState<StatsType>({
+    totalEarnings: 0,
+    activeServices: 0,
+    totalStudents: 0,
+    avgRating: 0
+  });
+  const [recentEarnings, setRecentEarnings] = useState<Earning[]>([]);
+  const [activeServices, setActiveServices] = useState<Service[]>([]);
+  const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(true);
+
+  useEffect(() => {
+    // Fetch stats
+    const fetchStats = async () => {
+      // Example: fetch total earnings, active services, total students, avg rating
+      // You may need to adjust queries based on your schema
+      const { data: earningsData } = await supabase.rpc('get_total_earnings');
+      const { data: activeServicesData } = await supabase.from('skills').select('*').eq('status', 'active');
+      const { data: studentsData } = await supabase.from('users').select('id');
+      const { data: ratingsData } = await supabase.from('ratings').select('rating');
+      setStats({
+        totalEarnings: earningsData || 0,
+        activeServices: activeServicesData ? activeServicesData.length : 0,
+        totalStudents: studentsData ? studentsData.length : 0,
+        avgRating: ratingsData && ratingsData.length > 0 ? parseFloat((ratingsData.reduce((a, b) => a + b.rating, 0) / ratingsData.length).toFixed(1)) : 0
+      });
+    };
+    // Fetch recent earnings
+    const fetchRecentEarnings = async () => {
+      const { data } = await supabase.from('earnings').select('*').order('date', { ascending: false }).limit(5);
+      setRecentEarnings(data || []);
+    };
+    // Fetch active services
+    const fetchActiveServices = async () => {
+      const { data } = await supabase.from('skills').select('*').eq('status', 'active');
+      setActiveServices(data || []);
+    };
+    // Fetch upcoming sessions
+    const fetchUpcomingSessions = async () => {
+      const { data } = await supabase.from('sessions').select('*').order('time', { ascending: true }).limit(5);
+      setUpcomingSessions(data || []);
+    };
+    // Fetch projects
+    const fetchProjects = async () => {
+      setLoadingProjects(true);
+      const { data, error } = await supabase.from('projects').select('*').eq('user_id', USER_ID);
+      setProjects(data || []);
+      setLoadingProjects(false);
+      if (error) toast.error('Failed to fetch projects: ' + error.message);
+    };
+    fetchStats();
+    fetchRecentEarnings();
+    fetchActiveServices();
+    fetchUpcomingSessions();
+    fetchProjects();
+
+    // Real-time listeners
+    const statsChannel = supabase.channel('realtime:stats').on('postgres_changes', { event: '*', schema: 'public', table: 'earnings' }, fetchStats).subscribe();
+    const earningsChannel = supabase.channel('realtime:earnings').on('postgres_changes', { event: '*', schema: 'public', table: 'earnings' }, fetchRecentEarnings).subscribe();
+    const servicesChannel = supabase.channel('realtime:services').on('postgres_changes', { event: '*', schema: 'public', table: 'skills' }, fetchActiveServices).subscribe();
+    const sessionsChannel = supabase.channel('realtime:sessions').on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, fetchUpcomingSessions).subscribe();
+    const projectsChannel = supabase.channel('realtime:projects').on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, fetchProjects).subscribe();
+    return () => {
+      supabase.removeChannel(statsChannel);
+      supabase.removeChannel(earningsChannel);
+      supabase.removeChannel(servicesChannel);
+      supabase.removeChannel(sessionsChannel);
+      supabase.removeChannel(projectsChannel);
+    };
+  }, []);
 
   // My Projects state
-  const [projects, setProjects] = useState([
-    { title: "Sample Project 1", description: "Booked React Bootcamp", status: "In Escrow" },
-    { title: "Sample Project 2", description: "Booked Design Session", status: "Completed" },
-  ]);
   const [showModal, setShowModal] = useState(false);
   const [newProject, setNewProject] = useState({ title: "", description: "", status: "In Escrow" });
 
   // Transaction modal state
   const [showTransactions, setShowTransactions] = useState(false);
   // Manage service modal state
-  const [manageService, setManageService] = useState<{ open: boolean; service?: any }>({ open: false });
+  const [manageService, setManageService] = useState<{ open: boolean; service?: Service }>({ open: false });
   // Join session modal state
-  const [joinSession, setJoinSession] = useState<{ open: boolean; session?: any }>({ open: false });
+  const [joinSession, setJoinSession] = useState<{ open: boolean; session?: Session }>({ open: false });
   // Edit project modal state
   const [editProject, setEditProject] = useState<{ open: boolean; idx?: number }>({ open: false });
 
-  const handleAddProject = () => {
-    if (!newProject.title || !newProject.description) return;
-    setProjects([...projects, newProject]);
-    setNewProject({ title: "", description: "", status: "In Escrow" });
-    setShowModal(false);
+  // Delete confirmation dialog state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; idx?: number }>({ open: false });
+
+  const handleAddProject = async () => {
+    if (!newProject.title.trim()) {
+      toast.error('Project title is required.');
+      return;
+    }
+    const toInsert = { ...newProject, user_id: USER_ID };
+    const { data, error } = await supabase.from('projects').insert([toInsert]);
+    if (!error) {
+      setNewProject({ title: "", description: "", status: "In Escrow", due_date: "" });
+      setShowModal(false);
+      toast.success('Project added!');
+    } else {
+      toast.error('Failed to add project: ' + (error?.message || error));
+    }
   };
 
-  const handleDeleteProject = (idx: number) => {
-    setProjects(projects.filter((_, i) => i !== idx));
+  const handleDeleteProject = async (idx: number) => {
+    const project = projects[idx];
+    const { error } = await supabase.from('projects').delete().eq('id', project.id);
+    if (error) {
+      toast.error('Failed to delete project: ' + error.message);
+    } else {
+      toast.success('Project deleted!');
+    }
   };
-  const handleEditProject = (idx: number, updated: any) => {
-    setProjects(projects.map((p, i) => (i === idx ? updated : p)));
-    setEditProject({ open: false });
+
+  const handleEditProject = async (idx: number, updated: Project) => {
+    const project = projects[idx];
+    const { error } = await supabase.from('projects').update(updated).eq('id', project.id);
+    if (!error) {
+      setEditProject({ open: false });
+      toast.success('Project updated!');
+    } else {
+      alert('Failed to update project: ' + error.message);
+    }
   };
 
   return (
@@ -116,7 +164,7 @@ const Dashboard = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project, idx) => (
-            <Card key={idx} className="sketch-border bg-white p-6">
+            <Card key={project.id} className="sketch-border bg-white p-6">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg font-semibold">{project.title}</CardTitle>
               </CardHeader>
@@ -124,11 +172,11 @@ const Dashboard = () => {
                 <p className="text-gray-600 mb-2">{project.description}</p>
                 <Badge className={project.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>{project.status}</Badge>
                 <div className="mt-4 flex gap-2">
-                  <Link to={`/service/demo-${idx + 1}`} className="block w-full">
+                  <Link to={`/project/${project.id}`} className="block w-full">
                     <Button className="w-full rounded-xl border-2 border-dashed border-blue-400 bg-white text-blue-700">View Details</Button>
                   </Link>
                   <Button onClick={() => setEditProject({ open: true, idx })} className="rounded-xl border-2 border-dashed border-gray-400 bg-white text-gray-900">Edit</Button>
-                  <Button onClick={() => handleDeleteProject(idx)} className="rounded-xl border-2 border-dashed border-red-400 bg-white text-red-700">Delete</Button>
+                  <Button onClick={() => setDeleteConfirm({ open: true, idx })} className="rounded-xl border-2 border-dashed border-red-400 bg-white text-red-700">Delete</Button>
                 </div>
               </CardContent>
             </Card>
@@ -136,7 +184,8 @@ const Dashboard = () => {
         </div>
         <Dialog open={showModal} onOpenChange={setShowModal}>
           <DialogContent>
-            <h3 className="text-xl font-bold mb-4">Add New Project</h3>
+            <DialogTitle>Add New Project</DialogTitle>
+            <DialogDescription className="sr-only">Fill out the form to add a new project to your dashboard.</DialogDescription>
             <input
               className="w-full mb-2 p-2 border border-dashed border-gray-300 rounded"
               placeholder="Project Title"
@@ -162,30 +211,14 @@ const Dashboard = () => {
         </Dialog>
         <Dialog open={editProject.open} onOpenChange={open => setEditProject({ open })}>
           <DialogContent>
-            <h3 className="text-xl font-bold mb-4">Edit Project</h3>
+            <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription className="sr-only">Edit the details of your project.</DialogDescription>
             {editProject.idx !== undefined && (
-              <>
-                <input
-                  className="w-full mb-2 p-2 border border-dashed border-gray-300 rounded"
-                  placeholder="Project Title"
-                  value={projects[editProject.idx].title}
-                  onChange={e => handleEditProject(editProject.idx!, { ...projects[editProject.idx!], title: e.target.value })}
-                />
-                <textarea
-                  className="w-full mb-2 p-2 border border-dashed border-gray-300 rounded"
-                  placeholder="Project Description"
-                  value={projects[editProject.idx].description}
-                  onChange={e => handleEditProject(editProject.idx!, { ...projects[editProject.idx!], description: e.target.value })}
-                />
-                <select
-                  className="w-full mb-4 p-2 border border-dashed border-gray-300 rounded"
-                  value={projects[editProject.idx].status}
-                  onChange={e => handleEditProject(editProject.idx!, { ...projects[editProject.idx!], status: e.target.value })}
-                >
-                  <option value="In Escrow">In Escrow</option>
-                  <option value="Completed">Completed</option>
-                </select>
-              </>
+              <EditProjectForm 
+                project={projects[editProject.idx]} 
+                onSave={updated => handleEditProject(editProject.idx!, updated)} 
+                onCancel={() => setEditProject({ open: false })} 
+              />
             )}
           </DialogContent>
         </Dialog>
@@ -198,7 +231,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">Total Earnings</p>
-                <p className="text-3xl font-bold text-primary">{dashboardData.stats.totalEarnings}</p>
+                <p className="text-3xl font-bold text-primary">{stats.totalEarnings}</p>
                 <p className="text-xs text-gray-500">SKILL tokens</p>
               </div>
               <div className="w-12 h-12 bg-sketch-green rounded-2xl flex items-center justify-center">
@@ -213,7 +246,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">Active Services</p>
-                <p className="text-3xl font-bold text-primary">{dashboardData.stats.activeServices}</p>
+                <p className="text-3xl font-bold text-primary">{stats.activeServices}</p>
                 <p className="text-xs text-gray-500">Currently teaching</p>
               </div>
               <div className="w-12 h-12 bg-sketch-blue rounded-2xl flex items-center justify-center">
@@ -228,7 +261,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">Total Students</p>
-                <p className="text-3xl font-bold text-primary">{dashboardData.stats.totalStudents}</p>
+                <p className="text-3xl font-bold text-primary">{stats.totalStudents}</p>
                 <p className="text-xs text-gray-500">Across all services</p>
               </div>
               <div className="w-12 h-12 bg-sketch-green rounded-2xl flex items-center justify-center">
@@ -243,7 +276,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">Avg Rating</p>
-                <p className="text-3xl font-bold text-primary">{dashboardData.stats.avgRating}</p>
+                <p className="text-3xl font-bold text-primary">{stats.avgRating}</p>
                 <p className="text-xs text-gray-500">⭐ from students</p>
               </div>
               <div className="w-12 h-12 bg-sketch-blue rounded-2xl flex items-center justify-center">
@@ -265,7 +298,7 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {dashboardData.recentEarnings.map((earning, index) => (
+            {recentEarnings.map((earning, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-sketch-gray rounded-xl">
                 <div>
                   <p className="font-medium text-gray-800">{earning.service}</p>
@@ -283,7 +316,7 @@ const Dashboard = () => {
               <DialogContent>
                 <h3 className="text-xl font-bold mb-4">All Transactions</h3>
                 <ul className="space-y-2">
-                  {dashboardData.recentEarnings.map((earning, idx) => (
+                  {recentEarnings.map((earning, idx) => (
                     <li key={idx} className="flex justify-between border-b pb-2">
                       <span>{earning.service} ({earning.date})</span>
                       <span className="font-bold text-primary">+{earning.amount} SKILL</span>
@@ -305,7 +338,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {dashboardData.activeServices.map((service, index) => (
+              {activeServices.map((service, index) => (
                 <div key={index} className="p-4 border-2 border-gray-200 rounded-xl">
                   <div className="flex items-start justify-between mb-3">
                     <div>
@@ -366,7 +399,7 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {dashboardData.upcomingSessions.map((session, index) => (
+            {upcomingSessions.map((session, index) => (
               <div key={index} className="p-4 bg-sketch-gray rounded-xl">
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -405,8 +438,53 @@ const Dashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirm.open} onOpenChange={open => setDeleteConfirm({ open })}>
+        <DialogContent>
+          <DialogTitle>Delete Project</DialogTitle>
+          <DialogDescription>Are you sure you want to delete this project? This action cannot be undone.</DialogDescription>
+          <div className="flex gap-2 mt-4">
+            <Button className="w-full rounded-xl border-2 border-dashed border-red-400" onClick={() => { handleDeleteProject(deleteConfirm.idx!); setDeleteConfirm({ open: false }); }}>Delete</Button>
+            <Button className="w-full rounded-xl border-2 border-dashed border-gray-400" onClick={() => setDeleteConfirm({ open: false })}>Cancel</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
+
+// Add EditProjectForm component
+function EditProjectForm({ project, onSave, onCancel }) {
+  const [form, setForm] = useState({ ...project });
+  return (
+    <>
+      <input
+        className="w-full mb-2 p-2 border border-dashed border-gray-300 rounded"
+        placeholder="Project Title"
+        value={form.title}
+        onChange={e => setForm({ ...form, title: e.target.value })}
+      />
+      <textarea
+        className="w-full mb-2 p-2 border border-dashed border-gray-300 rounded"
+        placeholder="Project Description"
+        value={form.description}
+        onChange={e => setForm({ ...form, description: e.target.value })}
+      />
+      <select
+        className="w-full mb-4 p-2 border border-dashed border-gray-300 rounded"
+        value={form.status}
+        onChange={e => setForm({ ...form, status: e.target.value })}
+      >
+        <option value="In Escrow">In Escrow</option>
+        <option value="Completed">Completed</option>
+      </select>
+      <div className="flex gap-2">
+        <Button className="w-full rounded-xl border-2 border-dashed border-blue-400" onClick={() => onSave(form)}>Save</Button>
+        <Button className="w-full rounded-xl border-2 border-dashed border-gray-400" onClick={onCancel}>Cancel</Button>
+      </div>
+    </>
+  );
+}
 
 export default Dashboard;
