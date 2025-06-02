@@ -1,4 +1,8 @@
-# <img src="public/SkillSwap DAO Logo Design.png" alt="SkillSwap DAO Logo" width="120" style="vertical-align:middle; margin-right:10px;"/> SkillSwap DAO
+# SkillSwap DAO
+
+<p align="center">
+  <img src="public/SkillSwap DAO Logo Design.png" alt="SkillSwap DAO Logo" width="120" />
+</p>
 
 SkillSwap DAO is a decentralized platform designed to facilitate skill exchange and collaboration among users using blockchain technology. The platform leverages smart contracts to ensure trustless, transparent, and fair skill swaps between participants.
 
