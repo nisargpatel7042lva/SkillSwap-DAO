@@ -33,7 +33,7 @@ These instructions will help you set up the project locally for development and 
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/SkillSwap-DAO.git
+   git clone https://github.com/nisargpatel7042lva/SkillSwap-DAO.git
    cd SkillSwap-DAO
    ```
 2. Install dependencies:
@@ -70,4 +70,4 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 This project is licensed under the [MIT License](LICENSE).
 
 ## Contact
-For questions or support, please contact [your-email@example.com] or open an issue.
+For questions or support, please contact [nisargpatel_5565@outlook.com] or open an issue.
