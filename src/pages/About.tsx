@@ -1,8 +1,7 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Users, Heart, Globe, Zap, Shield, Gift, Award, Star, TrendingUp, CheckCircle } from "lucide-react";
+import { Users, Heart, Globe, Zap, Shield, Gift, Award, Star, TrendingUp, CheckCircle, Search } from "lucide-react";
 
 const About = () => {
   return (
