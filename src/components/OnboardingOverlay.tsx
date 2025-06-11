@@ -48,10 +48,6 @@ const OnboardingOverlay = () => {
     setHasSeenProfileSetup(true);
   };
 
-  const handleCloseLoginPrompt = () => {
-    setShowLoginPrompt(false);
-  };
-
   if (!showProfileSetup && !showLoginPrompt) {
     return null;
   }
@@ -107,15 +103,7 @@ const OnboardingOverlay = () => {
 
       {showLoginPrompt && (
         <Card className="w-full max-w-md border-4 border-dashed border-purple-300 bg-white shadow-xl transform -rotate-1 animate-in zoom-in-95 duration-300">
-          <CardHeader className="relative">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute -top-2 -right-2 h-8 w-8 rounded-full border-2 border-dashed border-gray-300 bg-white hover:bg-gray-50"
-              onClick={handleCloseLoginPrompt}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+          <CardHeader>
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full border-4 border-dashed border-purple-300 flex items-center justify-center mx-auto mb-4 transform rotate-2">
                 <Wallet className="w-8 h-8 text-purple-600" />
@@ -132,19 +120,10 @@ const OnboardingOverlay = () => {
             <p className="text-gray-600 mb-6">
               Connect your wallet to access exclusive features, create your profile, and start earning from your skills in our Web3 marketplace.
             </p>
-            <div className="space-y-3">
-              <div onClick={handleCloseLoginPrompt}>
-                <ConnectButton />
-              </div>
-              <Button
-                variant="outline"
-                className="w-full border-2 border-dashed border-gray-300 text-gray-600 hover:bg-gray-50"
-                onClick={handleCloseLoginPrompt}
-              >
-                Continue browsing
-              </Button>
+            <div className="flex justify-center mb-4">
+              <ConnectButton />
             </div>
-            <div className="mt-4 text-xs text-gray-500">
+            <div className="text-xs text-gray-500">
               <p>✨ Join 1000+ skill providers already earning</p>
             </div>
           </CardContent>
