@@ -10,27 +10,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { AvatarUpload } from "@/components/ui/avatar-upload";
 import { useNavigate } from "react-router-dom";
 
-const DEFAULT_USER = {
-  username: "",
-  avatar_url: "",
-  bio: "",
-  rating: 0,
-  totalEarnings: "0 SKILL",
-  completedServices: 0,
-  joinDate: "",
-  skills: [],
-  badges: [],
-  recentActivity: [],
-};
-
 const Profile = () => {
   const { address, isConnected } = useAccount();
   const { data: ensName } = useEnsName({ address });
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState(DEFAULT_USER);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
+
+  // Profile data
+  const [profile, setProfile] = useState({
+    username: "",
+    avatar_url: "",
+    bio: "",
+    rating: 0,
+    totalEarnings: "0 SKILL",
+    completedServices: 0,
+    joinDate: "",
+    skills: [] as any[],
+    badges: [] as any[],
+    recentActivity: [] as any[],
+  });
 
   // Editable fields
   const [username, setUsername] = useState("");
@@ -50,14 +50,19 @@ const Profile = () => {
           console.error("Supabase fetch error:", error);
         }
         if (data) {
-          setProfile({
-            ...DEFAULT_USER,
+          const profileData = {
             username: data.username || "",
             avatar_url: data.avatar_url || "",
             bio: data.bio || "",
             rating: data.reputation || 0,
+            totalEarnings: "0 SKILL",
+            completedServices: 0,
             joinDate: data.created_at ? new Date(data.created_at).toLocaleString('default', { month: 'long', year: 'numeric' }) : "",
-          });
+            skills: [],
+            badges: [],
+            recentActivity: [],
+          };
+          setProfile(profileData);
           setUsername(data.username || "");
           setBio(data.bio || "");
           setAvatarUrl(data.avatar_url || "");
@@ -80,36 +85,21 @@ const Profile = () => {
       setSaving(false);
       return;
     }
-    const { data, error: fetchError } = await supabase
-      .from("users")
-      .select("username, avatar_url, bio, reputation, created_at")
-      .eq("address", address)
-      .single();
-    if (fetchError) {
-      console.error("Supabase fetch error:", fetchError);
-      setSaving(false);
-      return;
-    }
-    if (data) {
-      setProfile({
-        ...profile,
-        username: data.username || "",
-        avatar_url: data.avatar_url || "",
-        bio: data.bio || "",
-        rating: data.reputation || 0,
-        joinDate: data.created_at
-          ? new Date(data.created_at).toLocaleString("default", {
-              month: "long",
-              year: "numeric",
-            })
-          : "",
-      });
-      setUsername(data.username || "");
-      setBio(data.bio || "");
-      setAvatarUrl(data.avatar_url || "");
-    }
+    
+    // Update local profile state
+    const updatedProfile = {
+      ...profile,
+      username,
+      avatar_url: avatarUrl,
+      bio,
+    };
+    setProfile(updatedProfile);
+    
     setIsEditing(false);
     setSaving(false);
+    
+    // Redirect to home page after successful save
+    navigate("/");
   };
 
   if (!isConnected) {
@@ -200,6 +190,7 @@ const Profile = () => {
               ) : (
                 <p className="text-gray-600 mb-4 max-w-2xl">{bio || profile.bio || "No bio yet."}</p>
               )}
+              
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-green-50 rounded-lg border-2 border-dashed border-green-200">
                   <div className="text-2xl font-bold text-green-600">{profile.totalEarnings}</div>
