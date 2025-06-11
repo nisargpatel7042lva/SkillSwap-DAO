@@ -1,9 +1,11 @@
-import { useWriteContract } from 'wagmi';
+
+import { useWriteContract, useAccount } from 'wagmi';
 import { SKILL_EXCHANGE_ADDRESS } from '@/lib/SkillExchange';
 import abi from '@/lib/SkillExchangeABI.json';
 
 export function ListSkillButton() {
   const { writeContract, isPending, isSuccess, error, data } = useWriteContract();
+  const { address } = useAccount();
 
   return (
     <div>
@@ -19,6 +21,7 @@ export function ListSkillButton() {
               1000000000000000000n, // 1 ETH in wei
               'Demo Category',
             ],
+            account: address,
           })
         }
         disabled={isPending}
@@ -27,9 +30,9 @@ export function ListSkillButton() {
         {isPending ? 'Listing Skill...' : 'List Demo Skill'}
       </button>
       {isSuccess && (
-        <div className="text-green-600 mt-2">Skill listed! Tx: <a href={`https://sepolia.etherscan.io/tx/${data?.hash}`} target="_blank" rel="noopener noreferrer" className="underline">{data?.hash.slice(0, 10)}...</a></div>
+        <div className="text-green-600 mt-2">Skill listed! Tx: <a href={`https://sepolia.etherscan.io/tx/${data}`} target="_blank" rel="noopener noreferrer" className="underline">{data?.slice(0, 10)}...</a></div>
       )}
       {error && <div className="text-red-600 mt-2">Error: {error.message}</div>}
     </div>
   );
-} 
+}
