@@ -42,6 +42,13 @@ const OnboardingOverlay = () => {
     }
   }, [isConnected]);
 
+  // Hide login prompt when user connects
+  useEffect(() => {
+    if (isConnected && showLoginPrompt) {
+      setShowLoginPrompt(false);
+    }
+  }, [isConnected, showLoginPrompt]);
+
   const handleCloseProfileSetup = () => {
     setShowProfileSetup(false);
     localStorage.setItem('hasSeenProfileSetup', 'true');
@@ -102,32 +109,37 @@ const OnboardingOverlay = () => {
       )}
 
       {showLoginPrompt && (
-        <Card className="w-full max-w-md border-4 border-dashed border-purple-300 bg-white shadow-xl transform -rotate-1 animate-in zoom-in-95 duration-300">
-          <CardHeader>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full border-4 border-dashed border-purple-300 flex items-center justify-center mx-auto mb-4 transform rotate-2">
-                <Wallet className="w-8 h-8 text-purple-600" />
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Card className="w-full max-w-md border-4 border-dashed border-purple-300 bg-white shadow-xl transform -rotate-1 animate-in zoom-in-95 duration-300">
+            <CardHeader>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full border-4 border-dashed border-purple-300 flex items-center justify-center mx-auto mb-4 transform rotate-2">
+                  <Wallet className="w-8 h-8 text-purple-600" />
+                </div>
+                <CardTitle className="text-2xl font-bold text-gray-800 mb-2">
+                  Unlock More Opportunities! 🚀
+                </CardTitle>
+                <Badge variant="outline" className="border-dashed border-2 border-purple-300 bg-purple-50 text-purple-700">
+                  Connect Your Wallet
+                </Badge>
               </div>
-              <CardTitle className="text-2xl font-bold text-gray-800 mb-2">
-                Unlock More Opportunities! 🚀
-              </CardTitle>
-              <Badge variant="outline" className="border-dashed border-2 border-purple-300 bg-purple-50 text-purple-700">
-                Connect Your Wallet
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-gray-600 mb-6">
-              Connect your wallet to access exclusive features, create your profile, and start earning from your skills in our Web3 marketplace.
-            </p>
-            <div className="flex justify-center mb-4">
-              <ConnectButton />
-            </div>
-            <div className="text-xs text-gray-500">
-              <p>✨ Join 1000+ skill providers already earning</p>
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-gray-600 mb-6">
+                Connect your wallet to access exclusive features, create your profile, and start earning from your skills in our Web3 marketplace.
+              </p>
+              <div className="flex justify-center mb-4">
+                <ConnectButton />
+              </div>
+              <div className="text-xs text-gray-500">
+                <p>✨ Join 1000+ skill providers already earning</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
