@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,23 +20,11 @@ const Profile = () => {
   const navigate = useNavigate();
 
   // Profile data
-  const [profile, setProfile] = useState({
-    username: "",
-    avatar_url: "",
-    bio: "",
-    rating: 0,
-    totalEarnings: "0 SKILL",
-    completedServices: 0,
-    joinDate: "",
-    skills: [] as any[],
-    badges: [] as any[],
-    recentActivity: [] as any[],
-  });
-
-  // Editable fields
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [rating, setRating] = useState(0);
+  const [joinDate, setJoinDate] = useState("");
 
   useEffect(() => {
     if (!address) return;
@@ -50,22 +39,11 @@ const Profile = () => {
           console.error("Supabase fetch error:", error);
         }
         if (data) {
-          const profileData = {
-            username: data.username || "",
-            avatar_url: data.avatar_url || "",
-            bio: data.bio || "",
-            rating: data.reputation || 0,
-            totalEarnings: "0 SKILL",
-            completedServices: 0,
-            joinDate: data.created_at ? new Date(data.created_at).toLocaleString('default', { month: 'long', year: 'numeric' }) : "",
-            skills: [],
-            badges: [],
-            recentActivity: [],
-          };
-          setProfile(profileData);
           setUsername(data.username || "");
           setBio(data.bio || "");
           setAvatarUrl(data.avatar_url || "");
+          setRating(data.reputation || 0);
+          setJoinDate(data.created_at ? new Date(data.created_at).toLocaleString('default', { month: 'long', year: 'numeric' }) : "");
         }
         setLoading(false);
       });
@@ -74,26 +52,19 @@ const Profile = () => {
   const handleSave = async () => {
     if (!address) return;
     setSaving(true);
+    
     const { error } = await supabase.from("users").upsert({
       address,
       username,
       avatar_url: avatarUrl,
       bio,
     });
+    
     if (error) {
       console.error("Supabase upsert error:", error);
       setSaving(false);
       return;
     }
-    
-    // Update local profile state
-    const updatedProfile = {
-      ...profile,
-      username,
-      avatar_url: avatarUrl,
-      bio,
-    };
-    setProfile(updatedProfile);
     
     setIsEditing(false);
     setSaving(false);
@@ -106,6 +77,10 @@ const Profile = () => {
     return <div className="text-gray-500 p-8 text-center">Connect your wallet to view your profile.</div>;
   }
 
+  if (loading) {
+    return <div className="text-gray-500 p-8 text-center">Loading profile...</div>;
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Profile Header */}
@@ -116,10 +91,10 @@ const Profile = () => {
               <div className="w-32 h-32 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full border-4 border-dashed border-gray-400 flex items-center justify-center transform -rotate-2">
                 {isEditing ? (
                   <AvatarUpload value={avatarUrl} onChange={(url) => setAvatarUrl(url)} />
-                ) : profile.avatar_url ? (
-                  <Avatar>
-                    <AvatarImage src={profile.avatar_url} alt={profile.username} />
-                    <AvatarFallback>{profile.username?.[0] || "U"}</AvatarFallback>
+                ) : avatarUrl ? (
+                  <Avatar className="w-24 h-24">
+                    <AvatarImage src={avatarUrl} alt={username} />
+                    <AvatarFallback>{username?.[0] || "U"}</AvatarFallback>
                   </Avatar>
                 ) : (
                   <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center border-2 border-gray-300">
@@ -142,15 +117,15 @@ const Profile = () => {
                       placeholder="Your Name"
                     />
                   ) : (
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">{profile.username || ensName || "Unnamed"}</h1>
+                    <h1 className="text-3xl font-bold text-gray-800 mb-2">{username || ensName || "Unnamed"}</h1>
                   )}
                   <div className="flex items-center gap-4 mb-3">
                     <div className="flex items-center gap-1">
                       <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                      <span className="font-semibold">{profile.rating}</span>
+                      <span className="font-semibold">{rating}</span>
                     </div>
                     <Badge variant="outline" className="border-dashed border-2">
-                      {profile.completedServices || 0} services completed
+                      0 services completed
                     </Badge>
                   </div>
                   <div className="text-xs text-gray-500 break-all">
@@ -188,20 +163,20 @@ const Profile = () => {
                   </Button>
                 </>
               ) : (
-                <p className="text-gray-600 mb-4 max-w-2xl">{bio || profile.bio || "No bio yet."}</p>
+                <p className="text-gray-600 mb-4 max-w-2xl">{bio || "No bio yet."}</p>
               )}
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-green-50 rounded-lg border-2 border-dashed border-green-200">
-                  <div className="text-2xl font-bold text-green-600">{profile.totalEarnings}</div>
+                  <div className="text-2xl font-bold text-green-600">0 SKILL</div>
                   <div className="text-sm text-gray-600">Total Earned</div>
                 </div>
                 <div className="text-center p-4 bg-blue-50 rounded-lg border-2 border-dashed border-blue-200">
-                  <div className="text-2xl font-bold text-blue-600">{profile.completedServices}</div>
+                  <div className="text-2xl font-bold text-blue-600">0</div>
                   <div className="text-sm text-gray-600">Services</div>
                 </div>
                 <div className="text-center p-4 bg-purple-50 rounded-lg border-2 border-dashed border-purple-200">
-                  <div className="text-2xl font-bold text-purple-600">{profile.joinDate}</div>
+                  <div className="text-2xl font-bold text-purple-600">{joinDate || "Recent"}</div>
                   <div className="text-sm text-gray-600">Member Since</div>
                 </div>
               </div>
@@ -219,41 +194,21 @@ const Profile = () => {
         </TabsList>
 
         <TabsContent value="skills">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {profile.skills.map((skill, index) => (
-              <Card key={skill.name} className={`border-2 border-dashed border-gray-300 bg-white transform ${index % 2 === 0 ? 'rotate-1' : '-rotate-1'} hover:rotate-0 transition-transform`}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">{skill.name}</CardTitle>
-                  <Badge variant="secondary" className="w-fit">
-                    {skill.level}
-                  </Badge>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-green-500" />
-                      <span className="font-semibold text-green-600">{skill.earnings}</span>
-                    </div>
-                    <Button variant="outline" size="sm" className="border-dashed">
-                      Manage
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Card className="border-2 border-dashed border-gray-300 bg-white text-center p-8">
+            <div className="text-gray-500">
+              <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>No skills added yet. Start by listing your first skill!</p>
+            </div>
+          </Card>
         </TabsContent>
 
         <TabsContent value="badges">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {profile.badges.map((badge, index) => (
-              <Card key={badge.name} className={`border-2 border-dashed border-gray-300 bg-white text-center p-6 transform ${index % 3 === 0 ? 'rotate-2' : index % 3 === 1 ? '-rotate-1' : 'rotate-1'}`}>
-                <div className="text-4xl mb-3">{badge.icon}</div>
-                <h3 className="font-semibold text-gray-800 mb-2">{badge.name}</h3>
-                <p className="text-sm text-gray-600">{badge.description}</p>
-              </Card>
-            ))}
-          </div>
+          <Card className="border-2 border-dashed border-gray-300 bg-white text-center p-8">
+            <div className="text-gray-500">
+              <Award className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>No badges earned yet. Complete services to earn your first badge!</p>
+            </div>
+          </Card>
         </TabsContent>
 
         <TabsContent value="activity">
@@ -265,20 +220,9 @@ const Profile = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {profile.recentActivity.map((activity, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-                    <div>
-                      <p className="font-medium text-gray-800">{activity.title}</p>
-                      <p className="text-sm text-gray-500">{activity.date}</p>
-                    </div>
-                    {activity.earnings && (
-                      <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">
-                        {activity.earnings}
-                      </Badge>
-                    )}
-                  </div>
-                ))}
+              <div className="text-center text-gray-500 py-8">
+                <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No recent activity. Start using SkillSwap to see your activity here!</p>
               </div>
             </CardContent>
           </Card>
