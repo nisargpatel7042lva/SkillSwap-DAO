@@ -4,8 +4,10 @@ CREATE TABLE IF NOT EXISTS users (
   address text UNIQUE NOT NULL,
   username text,
   avatar_url text,
+  bio text,
   reputation integer DEFAULT 0,
-  created_at timestamp with time zone DEFAULT timezone('utc', now())
+  created_at timestamp with time zone DEFAULT timezone('utc', now()),
+  updated_at timestamp with time zone DEFAULT timezone('utc', now())
 );
 
 -- Skills table

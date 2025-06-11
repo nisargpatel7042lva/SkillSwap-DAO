@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { useAccount, useEnsName } from "wagmi";
 import { supabase } from "@/integrations/supabase/client";
 import { AvatarUpload } from "@/components/ui/avatar-upload";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const Profile = () => {
   const { address, isConnected } = useAccount();
@@ -17,6 +17,7 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   // Profile data
@@ -37,6 +38,7 @@ const Profile = () => {
       .then(({ data, error }) => {
         if (error) {
           console.error("Supabase fetch error:", error);
+          setError("Failed to load profile data");
         }
         if (data) {
           setUsername(data.username || "");
@@ -52,25 +54,43 @@ const Profile = () => {
   const handleSave = async () => {
     if (!address) return;
     setSaving(true);
+    setError("");
     
-    const { error } = await supabase.from("users").upsert({
-      address,
-      username,
-      avatar_url: avatarUrl,
-      bio,
-    });
-    
-    if (error) {
-      console.error("Supabase upsert error:", error);
+    try {
+      const { error: saveError } = await supabase
+        .from("users")
+        .upsert({
+          address,
+          username,
+          avatar_url: avatarUrl,
+          bio,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'address'
+        });
+      
+      if (saveError) {
+        console.error("Supabase error:", saveError);
+        setError("Failed to save profile. Please try again.");
+        setSaving(false);
+        return;
+      }
+      
+      setIsEditing(false);
       setSaving(false);
-      return;
+      
+      // Show success message
+      toast.success("Profile updated successfully!");
+      
+      // Add a small delay before navigation
+      setTimeout(() => {
+        navigate("/");
+      }, 1000);
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setError("An unexpected error occurred. Please try again.");
+      setSaving(false);
     }
-    
-    setIsEditing(false);
-    setSaving(false);
-    
-    // Redirect to home page after successful save
-    navigate("/");
   };
 
   if (!isConnected) {
@@ -86,6 +106,11 @@ const Profile = () => {
       {/* Profile Header */}
       <Card className="mb-8 border-2 border-dashed border-gray-300 bg-white shadow-lg transform rotate-1">
         <CardContent className="p-8">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded">
+              {error}
+            </div>
+          )}
           <div className="flex flex-col md:flex-row items-start gap-6">
             <div className="relative">
               <div className="w-32 h-32 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full border-4 border-dashed border-gray-400 flex items-center justify-center transform -rotate-2">
@@ -156,10 +181,15 @@ const Profile = () => {
                     className="w-full mb-2 p-2 border border-dashed border-gray-300 rounded"
                     value={bio}
                     onChange={e => setBio(e.target.value)}
-                    placeholder="Short bio"
+                    placeholder="Tell us about yourself"
+                    rows={4}
                   />
-                  <Button onClick={handleSave} disabled={saving} className="border-2 border-dashed border-blue-400">
-                    {saving ? "Saving..." : "Save"}
+                  <Button 
+                    onClick={handleSave} 
+                    disabled={saving} 
+                    className="border-2 border-dashed border-blue-400"
+                  >
+                    {saving ? "Saving..." : "Save Changes"}
                   </Button>
                 </>
               ) : (
