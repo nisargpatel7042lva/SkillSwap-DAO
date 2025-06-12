@@ -1,50 +1,37 @@
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useAccount } from "wagmi";
+import { Button } from "@/components/ui/button";
+import { Calendar, Clock, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Clock, CheckCircle, XCircle, Star } from "lucide-react";
+
+interface Skill {
+  title: string;
+  price: number;
+}
 
 interface Booking {
-  id: number;
+  id: string;
   requirements: string;
   status: string;
   payment_status: string;
   created_at: string;
-  skills: {
-    title: string;
-    price: number;
-  } | null;
+  skills: Skill;
 }
 
-export const BookingManagement = () => {
-  const { address, isConnected } = useAccount();
+const BookingManagement = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!address) return;
     fetchBookings();
-  }, [address]);
+  }, []);
 
   const fetchBookings = async () => {
-    if (!address) return;
-    
-    setLoading(true);
     try {
-      const { data: user } = await supabase
-        .from("users")
-        .select("id")
-        .eq("address", address)
-        .single();
-
-      if (!user) return;
-
       const { data, error } = await supabase
-        .from("bookings")
+        .from('bookings')
         .select(`
           id,
           requirements,
@@ -56,123 +43,109 @@ export const BookingManagement = () => {
             price
           )
         `)
-        .eq("requester_id", user.id)
-        .order("created_at", { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) {
-        toast.error("Failed to fetch bookings");
+        console.error('Error fetching bookings:', error);
         return;
       }
 
-      setBookings(data || []);
+      if (data) {
+        // Transform the data to match our interface
+        const transformedBookings = data.map(booking => ({
+          ...booking,
+          skills: Array.isArray(booking.skills) ? booking.skills[0] : booking.skills
+        })) as Booking[];
+        
+        setBookings(transformedBookings);
+      }
     } catch (error) {
-      toast.error("An error occurred while fetching bookings");
+      console.error('Error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateBookingStatus = async (bookingId: number, newStatus: string) => {
-    const { error } = await supabase
-      .from("bookings")
-      .update({ status: newStatus })
-      .eq("id", bookingId);
+  const updateBookingStatus = async (bookingId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: newStatus })
+        .eq('id', bookingId);
 
-    if (error) {
-      toast.error("Failed to update booking status");
-      return;
-    }
+      if (error) {
+        console.error('Error updating booking:', error);
+        return;
+      }
 
-    toast.success("Booking status updated");
-    fetchBookings();
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <Clock className="w-4 h-4 text-yellow-500" />;
-      case "accepted":
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case "completed":
-        return <Star className="w-4 h-4 text-blue-500" />;
-      case "cancelled":
-        return <XCircle className="w-4 h-4 text-red-500" />;
-      default:
-        return <Clock className="w-4 h-4 text-gray-500" />;
+      // Refresh bookings
+      fetchBookings();
+    } catch (error) {
+      console.error('Error:', error);
     }
   };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending": return "bg-yellow-100 text-yellow-700";
-      case "accepted": return "bg-green-100 text-green-700";
-      case "completed": return "bg-blue-100 text-blue-700";
-      case "cancelled": return "bg-red-100 text-red-700";
-      default: return "bg-gray-100 text-gray-700";
-    }
-  };
-
-  if (!isConnected) {
-    return (
-      <Card className="border-2 border-dashed border-gray-300">
-        <CardContent className="p-8 text-center">
-          <p className="text-gray-600">Connect your wallet to view your bookings</p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   if (loading) {
-    return (
-      <Card className="border-2 border-dashed border-gray-300">
-        <CardContent className="p-8 text-center">
-          <p className="text-gray-600">Loading bookings...</p>
-        </CardContent>
-      </Card>
-    );
+    return <div>Loading bookings...</div>;
   }
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-bold">My Bookings</h2>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">Booking Management</h2>
+      
       {bookings.length === 0 ? (
-        <Card className="border-2 border-dashed border-gray-300">
-          <CardContent className="p-8 text-center">
-            <p className="text-gray-600">No bookings yet. Start by booking a service!</p>
+        <Card>
+          <CardContent className="text-center py-8">
+            <p className="text-gray-500">No bookings found.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
           {bookings.map((booking) => (
-            <Card key={booking.id} className="border-2 border-dashed border-gray-300">
+            <Card key={booking.id}>
               <CardHeader>
                 <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{booking.skills?.title || "Unknown Service"}</CardTitle>
-                  <div className="flex items-center gap-2">
-                    {getStatusIcon(booking.status)}
-                    <Badge className={getStatusColor(booking.status)}>
+                  <div>
+                    <CardTitle className="text-lg">{booking.skills?.title || 'Unknown Skill'}</CardTitle>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {new Date(booking.created_at).toLocaleDateString()}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <DollarSign className="w-4 h-4" />
+                        ${booking.skills?.price || 0}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Badge variant={booking.status === 'completed' ? 'default' : 'secondary'}>
                       {booking.status}
+                    </Badge>
+                    <Badge variant={booking.payment_status === 'paid' ? 'default' : 'destructive'}>
+                      {booking.payment_status}
                     </Badge>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <p className="text-gray-600">{booking.requirements}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">
-                      Created: {new Date(booking.created_at).toLocaleDateString()}
-                    </span>
-                    <span className="font-semibold text-green-600">
-                      {booking.skills?.price || 0} SKILL
-                    </span>
-                  </div>
-                  {booking.status === "accepted" && (
-                    <Button 
-                      onClick={() => updateBookingStatus(booking.id, "completed")}
-                      className="w-full bg-green-500 hover:bg-green-600"
+                <p className="text-gray-700 mb-4">{booking.requirements}</p>
+                <div className="flex gap-2">
+                  {booking.status !== 'completed' && (
+                    <Button
+                      size="sm"
+                      onClick={() => updateBookingStatus(booking.id, 'completed')}
                     >
-                      Mark as Completed
+                      Mark Complete
+                    </Button>
+                  )}
+                  {booking.status === 'pending' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateBookingStatus(booking.id, 'in_progress')}
+                    >
+                      Start Work
                     </Button>
                   )}
                 </div>
@@ -184,3 +157,5 @@ export const BookingManagement = () => {
     </div>
   );
 };
+
+export default BookingManagement;
