@@ -1,6 +1,7 @@
 
 import { useWriteContract, useAccount } from 'wagmi';
 import { SKILL_EXCHANGE_ADDRESS } from '@/lib/SkillExchange';
+import { sepolia } from 'wagmi/chains';
 import abi from '@/lib/SkillExchangeABI.json';
 
 export function ListSkillButton() {
@@ -22,6 +23,7 @@ export function ListSkillButton() {
               'Demo Category',
             ],
             account: address,
+            chain: sepolia,
           })
         }
         disabled={isPending}

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectForm } from "@/components/ProjectForm";
-import { BookingManagement } from "@/components/BookingManagement";
+import BookingManagement from "@/components/BookingManagement";
 import { RatingSystem } from "@/components/RatingSystem";
 
 interface Project {
