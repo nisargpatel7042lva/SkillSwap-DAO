@@ -2,12 +2,12 @@ import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { ArrowUp, Check, Clock, Star, Users } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "wagmi";
 import { toast } from "sonner";
+import { BookingForm } from "@/components/BookingForm";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 const skills = [
   {
@@ -141,10 +141,9 @@ const ServiceDetail = () => {
   const [maxStudents, setMaxStudents] = useState(0);
   const [enrolling, setEnrolling] = useState(false);
   const [alreadyEnrolled, setAlreadyEnrolled] = useState(false);
-  const [enrolled, setEnrolled] = useState(false);
+  const [showBookingForm, setShowBookingForm] = useState(false);
   const skill = useMemo(() => skills.find((s) => s.id === id), [id]);
 
-  // Fetch service and enrollment data
   useEffect(() => {
     if (!id) return;
     setLoaded(false);
@@ -209,37 +208,10 @@ const ServiceDetail = () => {
     };
   }, [id]);
 
-  // Enroll handler
-  const handleEnroll = async () => {
-    if (!isConnected || enrolling || alreadyEnrolled) return;
-    setEnrolling(true);
-    // Get user id
-    const { data: user } = await supabase
-      .from("users")
-      .select("id")
-      .eq("address", address)
-      .single();
-    if (!user) {
-      setEnrolling(false);
-      return;
-    }
-    // Insert booking
-    const { error } = await supabase.from("bookings").insert({
-      skill_id: id,
-      requester_id: user.id,
-      status: "pending",
-      payment_status: "unpaid",
-    });
-    if (!error) {
-      setAlreadyEnrolled(true);
-      setStudentsEnrolled((n) => n + 1);
-    }
-    setEnrolling(false);
-  };
-
-  const handleDemoEnroll = () => {
-    setEnrolled(true);
-    toast.success('Enrolled! (Demo action)');
+  const handleBookingCreated = () => {
+    setAlreadyEnrolled(true);
+    setStudentsEnrolled((n) => n + 1);
+    setShowBookingForm(false);
   };
 
   if (!skill) return <div className="p-8 text-center">Skill not found.</div>;
@@ -264,11 +236,31 @@ const ServiceDetail = () => {
               <div className="text-xs text-gray-500">Rating: {skill.provider.rating}</div>
             </div>
           </div>
-          <Button className="mt-6 w-full bg-blue-500 text-white rounded-xl" onClick={handleDemoEnroll} disabled={enrolled}>
-            {enrolled ? 'Enrolled!' : 'Enroll Now'}
+          
+          <div className="mt-4 text-sm text-gray-600">
+            <span className="font-medium">{studentsEnrolled}</span> students enrolled
+          </div>
+
+          <Button 
+            className="mt-6 w-full bg-blue-500 text-white rounded-xl" 
+            onClick={() => setShowBookingForm(true)}
+            disabled={alreadyEnrolled || !isConnected}
+          >
+            {!isConnected ? 'Connect Wallet to Book' : 
+             alreadyEnrolled ? 'Already Booked' : 'Book This Service'}
           </Button>
         </CardContent>
       </Card>
+
+      <Dialog open={showBookingForm} onOpenChange={setShowBookingForm}>
+        <DialogContent className="max-w-md">
+          <BookingForm 
+            skill={skill}
+            onClose={() => setShowBookingForm(false)}
+            onBookingCreated={handleBookingCreated}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
