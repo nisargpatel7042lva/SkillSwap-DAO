@@ -11,6 +11,22 @@ import { AvatarUpload } from "@/components/ui/avatar-upload";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+interface UserProfile {
+  username: string | null;
+  avatar_url: string | null;
+  bio?: string | null;
+  reputation: number | null;
+  created_at: string | null;
+}
+
+interface UpdateProfileData {
+  address: string;
+  username: string;
+  avatar_url: string;
+  bio?: string;
+  updated_at?: string;
+}
+
 const Profile = () => {
   const { address, isConnected } = useAccount();
   const { data: ensName } = useEnsName({ address });
@@ -30,48 +46,102 @@ const Profile = () => {
   useEffect(() => {
     if (!address) return;
     setLoading(true);
-    supabase
-      .from("users")
-      .select("username, avatar_url, bio, reputation, created_at")
-      .eq("address", address)
-      .single()
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("Supabase fetch error:", error);
+    
+    const fetchOrCreateProfile = async () => {
+      try {
+        // First try to fetch existing profile
+        const { data, error: fetchError } = await supabase
+          .from("users")
+          .select("username, avatar_url, reputation, created_at")
+          .eq("address", address)
+          .single();
+
+        if (fetchError && fetchError.code === 'PGRST116') {
+          // If no profile exists, create a new one
+          const { data: newUser, error: createError } = await supabase
+            .from("users")
+            .insert([
+              {
+                address,
+                username: ensName || `User_${address.slice(0, 6)}`,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }
+            ])
+            .select()
+            .single();
+
+          if (createError) {
+            console.error("Error creating profile:", createError);
+            setError("Failed to create profile. Please try again.");
+            return;
+          }
+
+          // Set the new user data
+          setUsername(newUser.username || "");
+          setBio(""); // Default empty bio
+          setAvatarUrl(newUser.avatar_url || "");
+          setRating(newUser.reputation || 0);
+          setJoinDate(new Date(newUser.created_at).toLocaleString('default', { month: 'long', year: 'numeric' }));
+        } else if (fetchError) {
+          console.error("Error fetching profile:", fetchError);
           setError("Failed to load profile data");
+          return;
+        } else if (data) {
+          const profileData = data as UserProfile;
+          // Set existing user data
+          setUsername(profileData.username || "");
+          setBio(profileData.bio || ""); // Will be empty if column doesn't exist
+          setAvatarUrl(profileData.avatar_url || "");
+          setRating(profileData.reputation || 0);
+          setJoinDate(profileData.created_at ? new Date(profileData.created_at).toLocaleString('default', { month: 'long', year: 'numeric' }) : "");
         }
-        if (data) {
-          setUsername(data.username || "");
-          setBio(data.bio || "");
-          setAvatarUrl(data.avatar_url || "");
-          setRating(data.reputation || 0);
-          setJoinDate(data.created_at ? new Date(data.created_at).toLocaleString('default', { month: 'long', year: 'numeric' }) : "");
-        }
+      } catch (err) {
+        console.error("Unexpected error:", err);
+        setError("An unexpected error occurred");
+      } finally {
         setLoading(false);
-      });
-  }, [address]);
+      }
+    };
+
+    fetchOrCreateProfile();
+  }, [address, ensName]);
 
   const handleSave = async () => {
-    if (!address) return;
+    if (!address) {
+      setError("Wallet not connected");
+      return;
+    }
+
+    if (!username.trim()) {
+      setError("Username cannot be empty");
+      return;
+    }
+
     setSaving(true);
     setError("");
     
     try {
+      const updateData: UpdateProfileData = {
+        address,
+        username: username.trim(),
+        avatar_url: avatarUrl.trim()
+      };
+
+      // Only include bio if it exists in the schema
+      if (bio !== undefined) {
+        updateData.bio = bio.trim();
+      }
+
       const { error: saveError } = await supabase
         .from("users")
-        .upsert({
-          address,
-          username,
-          avatar_url: avatarUrl,
-          bio,
-          updated_at: new Date().toISOString()
-        }, {
+        .upsert(updateData, {
           onConflict: 'address'
         });
       
       if (saveError) {
         console.error("Supabase error:", saveError);
-        setError("Failed to save profile. Please try again.");
+        setError(saveError.message || "Failed to save profile. Please try again.");
         setSaving(false);
         return;
       }
