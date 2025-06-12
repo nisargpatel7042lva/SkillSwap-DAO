@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,63 +7,57 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Calendar, TrendingUp, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
+import { supabase } from "@/integrations/supabase/client";
+import { ProjectForm } from "@/components/ProjectForm";
+import { BookingManagement } from "@/components/BookingManagement";
+import { RatingSystem } from "@/components/RatingSystem";
 
-// Mock data - in a real app this would come from your backend
-const mockProjects = [
-  {
-    id: 1,
-    title: "E-commerce Website Redesign",
-    description: "Complete overhaul of the company website with modern design and improved UX",
-    status: "In Progress",
-    dueDate: "2024-02-15"
-  },
-  {
-    id: 2,
-    title: "Mobile App Development",
-    description: "Native iOS and Android app for customer engagement",
-    status: "Planning",
-    dueDate: "2024-03-01"
-  },
-  {
-    id: 3,
-    title: "Brand Identity Package",
-    description: "Logo design, brand guidelines, and marketing materials",
-    status: "Completed",
-    dueDate: "2024-01-20"
-  }
-];
-
-const mockBookings = [
-  {
-    id: 1,
-    skillTitle: "React Development Bootcamp",
-    provider: "Alex Chen",
-    status: "Confirmed",
-    date: "2024-01-25"
-  },
-  {
-    id: 2,
-    skillTitle: "UI/UX Design Fundamentals",
-    provider: "Sarah Wilson",
-    status: "Pending",
-    date: "2024-02-01"
-  }
-];
+interface Project {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  due_date: string;
+}
 
 const Dashboard = () => {
   const { address, isConnected } = useAccount();
-  const [newProject, setNewProject] = useState({
-    title: "",
-    description: "",
-    status: ""
-  });
+  const [projects, setProjects] = useState<Project[]>([]);
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleCreateProject = () => {
-    // In a real app, this would save to your backend
-    console.log("Creating project:", newProject);
-    setNewProject({ title: "", description: "", status: "" });
+  useEffect(() => {
+    if (!address) return;
+    fetchProjects();
+  }, [address]);
+
+  const fetchProjects = async () => {
+    if (!address) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("user_id", address)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching projects:", error);
+        return;
+      }
+
+      setProjects(data || []);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProjectCreated = () => {
     setShowNewProjectForm(false);
+    fetchProjects();
   };
 
   if (!isConnected) {
@@ -81,6 +75,10 @@ const Dashboard = () => {
     );
   }
 
+  const activeProjects = projects.filter(p => p.status === "In Progress").length;
+  const completedProjects = projects.filter(p => p.status === "Completed").length;
+  const pendingProjects = projects.filter(p => p.status === "Planning").length;
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -94,7 +92,7 @@ const Dashboard = () => {
         <Card className="border-2 border-dashed border-blue-300 bg-blue-50 transform rotate-1">
           <CardContent className="p-6 text-center">
             <TrendingUp className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-blue-700">12</div>
+            <div className="text-2xl font-bold text-blue-700">{activeProjects}</div>
             <div className="text-sm text-blue-600">Active Projects</div>
           </CardContent>
         </Card>
@@ -102,7 +100,7 @@ const Dashboard = () => {
         <Card className="border-2 border-dashed border-green-300 bg-green-50 transform -rotate-1">
           <CardContent className="p-6 text-center">
             <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-green-700">28</div>
+            <div className="text-2xl font-bold text-green-700">{completedProjects}</div>
             <div className="text-sm text-green-600">Completed</div>
           </CardContent>
         </Card>
@@ -110,25 +108,26 @@ const Dashboard = () => {
         <Card className="border-2 border-dashed border-purple-300 bg-purple-50 transform rotate-1">
           <CardContent className="p-6 text-center">
             <Clock className="w-8 h-8 text-purple-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-purple-700">5</div>
-            <div className="text-sm text-purple-600">Pending</div>
+            <div className="text-2xl font-bold text-purple-700">{pendingProjects}</div>
+            <div className="text-sm text-purple-600">Planning</div>
           </CardContent>
         </Card>
         
         <Card className="border-2 border-dashed border-orange-300 bg-orange-50 transform -rotate-1">
           <CardContent className="p-6 text-center">
             <Calendar className="w-8 h-8 text-orange-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-orange-700">3</div>
-            <div className="text-sm text-orange-600">Due Soon</div>
+            <div className="text-2xl font-bold text-orange-700">{projects.length}</div>
+            <div className="text-sm text-orange-600">Total Projects</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Main Content */}
       <Tabs defaultValue="projects" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-8 bg-gray-100 border-2 border-dashed border-gray-300">
+        <TabsList className="grid w-full grid-cols-3 mb-8 bg-gray-100 border-2 border-dashed border-gray-300">
           <TabsTrigger value="projects">My Projects</TabsTrigger>
           <TabsTrigger value="bookings">My Bookings</TabsTrigger>
+          <TabsTrigger value="ratings">Rate Services</TabsTrigger>
         </TabsList>
 
         <TabsContent value="projects">
@@ -144,116 +143,72 @@ const Dashboard = () => {
           </div>
 
           {showNewProjectForm && (
-            <Card className="mb-6 border-2 border-dashed border-gray-300 bg-yellow-50">
-              <CardHeader>
-                <CardTitle>Create New Project</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Project Title"
-                    value={newProject.title}
-                    onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
-                    className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg"
-                  />
-                  <textarea
-                    placeholder="Project Description"
-                    value={newProject.description}
-                    onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                    className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg h-24"
-                  />
-                  <select
-                    value={newProject.status}
-                    onChange={(e) => setNewProject({ ...newProject, status: e.target.value })}
-                    className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg"
-                  >
-                    <option value="">Select Status</option>
-                    <option value="Planning">Planning</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Review">Review</option>
-                  </select>
-                  <div className="flex gap-2">
-                    <Button onClick={handleCreateProject} className="bg-green-500 hover:bg-green-600">
-                      Create Project
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowNewProjectForm(false)}
-                      className="border-2 border-dashed border-gray-300"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="mb-6">
+              <ProjectForm 
+                onProjectCreated={handleProjectCreated}
+                onCancel={() => setShowNewProjectForm(false)}
+              />
+            </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockProjects.map((project, index) => (
-              <Card key={project.id} className={`border-2 border-dashed border-gray-300 bg-white transform ${index % 2 === 0 ? 'rotate-1' : '-rotate-1'} hover:rotate-0 transition-transform`}>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{project.title}</CardTitle>
-                    <Badge variant={
-                      project.status === 'Completed' ? 'default' : 
-                      project.status === 'In Progress' ? 'secondary' : 'outline'
-                    }>
-                      {project.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 text-sm mb-4">{project.description}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <Calendar className="w-4 h-4" />
-                      Due: {project.dueDate}
+          {loading ? (
+            <Card className="border-2 border-dashed border-gray-300">
+              <CardContent className="p-8 text-center">
+                <p className="text-gray-600">Loading projects...</p>
+              </CardContent>
+            </Card>
+          ) : projects.length === 0 ? (
+            <Card className="border-2 border-dashed border-gray-300">
+              <CardContent className="p-8 text-center">
+                <p className="text-gray-600">No projects yet. Create your first project!</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {projects.map((project, index) => (
+                <Card key={project.id} className={`border-2 border-dashed border-gray-300 bg-white transform ${index % 2 === 0 ? 'rotate-1' : '-rotate-1'} hover:rotate-0 transition-transform`}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-lg">{project.title}</CardTitle>
+                      <Badge variant={
+                        project.status === 'Completed' ? 'default' : 
+                        project.status === 'In Progress' ? 'secondary' : 'outline'
+                      }>
+                        {project.status}
+                      </Badge>
                     </div>
-                    <Link to={`/project/${project.id}`}>
-                      <Button variant="outline" size="sm" className="border-dashed">
-                        View Details
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-600 text-sm mb-4">{project.description}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Calendar className="w-4 h-4" />
+                        Due: {project.due_date ? new Date(project.due_date).toLocaleDateString() : "No due date"}
+                      </div>
+                      <Link to={`/project/${project.id}`}>
+                        <Button variant="outline" size="sm" className="border-dashed">
+                          View Details
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="bookings">
-          <h2 className="text-2xl font-bold mb-6">My Skill Bookings</h2>
-          <div className="space-y-4">
-            {mockBookings.map((booking, index) => (
-              <Card key={booking.id} className={`border-2 border-dashed border-gray-300 bg-white transform ${index % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">{booking.skillTitle}</h3>
-                      <p className="text-gray-600 mb-2">Provider: {booking.provider}</p>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <Calendar className="w-4 h-4" />
-                        {booking.date}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <Badge variant={booking.status === 'Confirmed' ? 'default' : 'secondary'}>
-                        {booking.status}
-                      </Badge>
-                      {booking.status === 'Pending' && (
-                        <div className="mt-2">
-                          <AlertCircle className="w-4 h-4 text-yellow-500 inline mr-1" />
-                          <span className="text-xs text-yellow-600">Awaiting confirmation</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <BookingManagement />
+        </TabsContent>
+
+        <TabsContent value="ratings">
+          <Card className="border-2 border-dashed border-gray-300">
+            <CardContent className="p-8 text-center">
+              <p className="text-gray-600 mb-4">Rate completed services here</p>
+              <p className="text-sm text-gray-500">Complete a service booking to see rating options</p>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
