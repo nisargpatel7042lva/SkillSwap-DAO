@@ -1,34 +1,15 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, User, Wallet, Menu } from "lucide-react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useUser } from "@/components/UserContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Header = () => {
   const { address, isConnected } = useAccount();
-  const [userAvatar, setUserAvatar] = useState("");
-  const [username, setUsername] = useState("");
-
-  useEffect(() => {
-    if (!address) return;
-    
-    supabase
-      .from("users")
-      .select("username, avatar_url")
-      .eq("address", address)
-      .single()
-      .then(({ data, error }) => {
-        if (data) {
-          setUserAvatar(data.avatar_url || "");
-          setUsername(data.username || "");
-        }
-      });
-  }, [address]);
+  const { profile } = useUser();
 
   return (
     <header className="bg-white border-b-4 border-dashed border-gray-300 sticky top-0 z-50 shadow-lg transition-colors">
@@ -74,10 +55,10 @@ const Header = () => {
           <div className="flex items-center space-x-4">
             <Link to="/profile">
               <Button className="border-2 border-dashed border-transparent hover:border-gray-300 rounded-xl flex items-center gap-2">
-                {isConnected && userAvatar ? (
+                {isConnected && profile?.avatar_url ? (
                   <Avatar className="w-6 h-6">
-                    <AvatarImage src={userAvatar} alt={username} />
-                    <AvatarFallback className="text-xs">{username?.[0] || "U"}</AvatarFallback>
+                    <AvatarImage src={profile.avatar_url} alt={profile.username} />
+                    <AvatarFallback className="text-xs">{profile.username?.[0] || "U"}</AvatarFallback>
                   </Avatar>
                 ) : (
                   <User className="w-4 h-4" />

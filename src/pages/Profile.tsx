@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AvatarUpload } from "@/components/ui/avatar-upload";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useUser } from "@/components/UserContext";
 
 interface UserProfile {
   username: string | null;
@@ -30,6 +31,7 @@ interface UpdateProfileData {
 const Profile = () => {
   const { address, isConnected } = useAccount();
   const { data: ensName } = useEnsName({ address });
+  const { profile, setProfile, refreshProfile } = useUser();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -44,6 +46,15 @@ const Profile = () => {
   const [joinDate, setJoinDate] = useState("");
 
   useEffect(() => {
+    if (profile) {
+      setUsername(profile.username || "");
+      setBio(profile.bio || "");
+      setAvatarUrl(profile.avatar_url || "");
+      setRating(profile.reputation || 0);
+      setJoinDate(profile.created_at ? new Date(profile.created_at).toLocaleString('default', { month: 'long', year: 'numeric' }) : "");
+      setLoading(false);
+      return;
+    }
     if (!address) return;
     setLoading(true);
     
@@ -105,7 +116,7 @@ const Profile = () => {
     };
 
     fetchOrCreateProfile();
-  }, [address, ensName]);
+  }, [address, ensName, profile]);
 
   const handleSave = async () => {
     if (!address) {
@@ -149,10 +160,8 @@ const Profile = () => {
       setIsEditing(false);
       setSaving(false);
       
-      // Show success message
       toast.success("Profile updated successfully!");
-      
-      // Add a small delay before navigation
+      await refreshProfile();
       setTimeout(() => {
         navigate("/");
       }, 1000);
