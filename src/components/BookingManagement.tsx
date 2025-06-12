@@ -17,7 +17,7 @@ interface Booking {
   skills: {
     title: string;
     price: number;
-  };
+  } | null;
 }
 
 export const BookingManagement = () => {
@@ -147,7 +147,7 @@ export const BookingManagement = () => {
             <Card key={booking.id} className="border-2 border-dashed border-gray-300">
               <CardHeader>
                 <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{booking.skills?.title}</CardTitle>
+                  <CardTitle className="text-lg">{booking.skills?.title || "Unknown Service"}</CardTitle>
                   <div className="flex items-center gap-2">
                     {getStatusIcon(booking.status)}
                     <Badge className={getStatusColor(booking.status)}>
@@ -164,7 +164,7 @@ export const BookingManagement = () => {
                       Created: {new Date(booking.created_at).toLocaleDateString()}
                     </span>
                     <span className="font-semibold text-green-600">
-                      {booking.skills?.price} SKILL
+                      {booking.skills?.price || 0} SKILL
                     </span>
                   </div>
                   {booking.status === "accepted" && (
