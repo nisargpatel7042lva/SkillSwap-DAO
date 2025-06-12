@@ -4,7 +4,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { SmoothCursor } from "@/components/ui/smooth-cursor";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import OnboardingOverlay from "./components/OnboardingOverlay";
@@ -24,7 +23,6 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <SmoothCursor />
       <BrowserRouter>
         <div className="min-h-screen flex flex-col">
           <Header />
