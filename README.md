@@ -55,7 +55,6 @@ These instructions will help you set up the project locally for development and 
   ```bash
   [Insert deployment command, e.g., npx hardhat run scripts/deploy.js]
   ```
-- [Add instructions for interacting with the app, running tests, etc.]
 
 ## Contributing
 Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
