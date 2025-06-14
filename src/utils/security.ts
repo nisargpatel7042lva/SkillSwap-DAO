@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import { SECURITY_CONFIG } from '@/config/security';
 
 // Input sanitization
 export const sanitizeInput = (input: string): string => {
@@ -9,12 +10,9 @@ export const sanitizeInput = (input: string): string => {
     .trim();
 };
 
-// Basic rate limiting
+// Rate limiting
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
-const MAX_REQUESTS = 100; // Maximum requests per window
 
-// Rate limiting middleware
 export const checkRateLimit = (identifier: string): boolean => {
   const now = Date.now();
   const userLimit = rateLimitStore.get(identifier);
@@ -22,12 +20,12 @@ export const checkRateLimit = (identifier: string): boolean => {
   if (!userLimit || now > userLimit.resetTime) {
     rateLimitStore.set(identifier, {
       count: 1,
-      resetTime: now + RATE_LIMIT_WINDOW,
+      resetTime: now + SECURITY_CONFIG.RATE_LIMIT.WINDOW_MS,
     });
     return true;
   }
 
-  if (userLimit.count >= MAX_REQUESTS) {
+  if (userLimit.count >= SECURITY_CONFIG.RATE_LIMIT.MAX_REQUESTS) {
     return false;
   }
 
@@ -64,7 +62,7 @@ export const validateWalletSignature = async (
   }
 };
 
-// Basic security headers
+// Security headers
 export const getSecurityHeaders = () => {
   return {
     'X-Content-Type-Options': 'nosniff',
@@ -74,20 +72,64 @@ export const getSecurityHeaders = () => {
   };
 };
 
-// Content Security Policy headers
-export const getCSPHeaders = () => {
+// Route protection
+export const isProtectedRoute = (path: string): boolean => {
+  const protectedRoutes = [
+    '/profile',
+    '/dashboard',
+    '/service',
+    '/project',
+  ];
+  return protectedRoutes.some(route => path.startsWith(route));
+};
+
+// Password validation (for future traditional auth)
+export const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  const { MIN_LENGTH, REQUIRE_SPECIAL_CHAR, REQUIRE_NUMBER, REQUIRE_UPPERCASE } = SECURITY_CONFIG.PASSWORD;
+
+  if (password.length < MIN_LENGTH) {
+    errors.push(`Password must be at least ${MIN_LENGTH} characters long`);
+  }
+  if (REQUIRE_SPECIAL_CHAR && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    errors.push('Password must contain at least one special character');
+  }
+  if (REQUIRE_NUMBER && !/\d/.test(password)) {
+    errors.push('Password must contain at least one number');
+  }
+  if (REQUIRE_UPPERCASE && !/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter');
+  }
+
   return {
-    'Content-Security-Policy': `
-      default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;
-      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-      img-src 'self' data: https:;
-      font-src 'self' https://fonts.gstatic.com;
-      connect-src 'self' https://api.your-backend.com;
-    `.replace(/\s+/g, ' ').trim(),
-    'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
-    'X-XSS-Protection': '1; mode=block',
-    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    isValid: errors.length === 0,
+    errors,
   };
+};
+
+// API request validation
+export const validateApiRequest = (request: Request): { isValid: boolean; error?: string } => {
+  // Check content type
+  const contentType = request.headers.get('content-type');
+  if (request.method === 'POST' && contentType !== 'application/json') {
+    return { isValid: false, error: 'Invalid content type' };
+  }
+
+  // Check payload size
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > parseInt(SECURITY_CONFIG.API.MAX_PAYLOAD_SIZE)) {
+    return { isValid: false, error: 'Payload too large' };
+  }
+
+  return { isValid: true };
+};
+
+// Session management
+export const createSecureSession = (userId: string): string => {
+  const sessionId = crypto.randomUUID();
+  const expiresAt = Date.now() + SECURITY_CONFIG.SESSION.MAX_AGE;
+  
+  // In a real application, you would store this in a secure database
+  // For now, we'll just return the session ID
+  return sessionId;
 }; 
