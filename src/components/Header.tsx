@@ -1,15 +1,18 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, User, Wallet, Menu } from "lucide-react";
+import { Search, User, Wallet, Menu, X } from "lucide-react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { useUser } from "@/components/UserContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useState } from "react";
 
 const Header = () => {
   const { address, isConnected } = useAccount();
   const { profile } = useUser();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   return (
     <header className="bg-white border-b-4 border-dashed border-gray-300 sticky top-0 z-50 shadow-lg transition-colors">
@@ -24,7 +27,7 @@ const Header = () => {
             />
           </Link>
 
-          {/* Navigation */}
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link to="/marketplace" className="text-gray-600 hover:text-blue-600 font-medium relative group">
               Marketplace
@@ -40,7 +43,16 @@ const Header = () => {
             </Link>
           </nav>
 
-          {/* Search Bar */}
+          {/* Mobile Hamburger */}
+          <button
+            className="md:hidden p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+            onClick={() => setMobileNavOpen((open) => !open)}
+            aria-label="Toggle navigation"
+          >
+            {mobileNavOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+
+          {/* Desktop Search Bar */}
           <div className="hidden lg:flex items-center flex-1 max-w-md mx-8">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -50,6 +62,15 @@ const Header = () => {
               />
             </div>
           </div>
+
+          {/* Mobile Search Icon */}
+          <button
+            className="lg:hidden p-2 ml-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+            onClick={() => setShowMobileSearch((show) => !show)}
+            aria-label="Toggle search"
+          >
+            <Search className="w-5 h-5 text-gray-600" />
+          </button>
 
           {/* User Actions */}
           <div className="flex items-center space-x-4">
@@ -69,6 +90,34 @@ const Header = () => {
             <ConnectButton />
           </div>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileNavOpen && (
+          <nav className="md:hidden mt-4 flex flex-col space-y-4 bg-white rounded-xl shadow-lg p-4 border-2 border-dashed border-gray-200">
+            <Link to="/marketplace" className="text-gray-700 font-medium" onClick={() => setMobileNavOpen(false)}>
+              Marketplace
+            </Link>
+            <Link to="/about" className="text-gray-700 font-medium" onClick={() => setMobileNavOpen(false)}>
+              About
+            </Link>
+            <Link to="/dashboard" className="text-gray-700 font-medium" onClick={() => setMobileNavOpen(false)}>
+              Dashboard
+            </Link>
+          </nav>
+        )}
+
+        {/* Mobile Search Bar */}
+        {showMobileSearch && (
+          <div className="lg:hidden mt-4 flex items-center">
+            <div className="relative w-full">
+              <Input
+                placeholder="Search skills... 🔍"
+                className="pl-10 border-2 border-dashed border-gray-300 focus:border-blue-400 bg-gray-50 rounded-xl"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );
