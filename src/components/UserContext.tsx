@@ -31,16 +31,19 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       setProfile(null);
       setLoading(false);
       setError(null);
+      console.log("No address, skipping profile fetch");
       return;
     }
     setLoading(true);
     setError(null);
+    console.log("Fetching profile for address:", address);
     try {
       const { data, error } = await supabase
         .from("users")
         .select("username, avatar_url, bio, reputation, created_at")
         .eq("address", address)
         .single();
+      console.log("Supabase response:", { data, error });
       if (error) {
         setError(error.message);
         setProfile(null);
@@ -50,8 +53,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     } catch (err: any) {
       setError(err.message || "Unknown error");
       setProfile(null);
+      console.log("Fetch profile error:", err);
     } finally {
       setLoading(false);
+      console.log("Profile fetch complete. Loading:", false);
     }
   };
 

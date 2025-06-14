@@ -18,12 +18,34 @@ import { UserProvider, useUser } from "@/components/UserContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import SecurityProvider from "./components/SecurityProvider";
 import Loader from "./components/Loader";
+import React, { useMemo } from "react";
 
 const queryClient = new QueryClient();
 
+const loadingDialogues = [
+  "Sharpening skills...",
+  "Matching you with the best mentors...",
+  "Swapping knowledge on the blockchain...",
+  "Summoning the DAO wisdom...",
+  "Loading your skill arsenal...",
+  "Connecting to the SkillSwap universe...",
+  "Unlocking new opportunities...",
+  "Fueling up your learning journey...",
+  "Gathering community insights...",
+  "Preparing your dashboard...",
+];
+
 function AppContent() {
   const { loading, error } = useUser();
-  if (loading) return <Loader />;
+  const randomDialogue = useMemo(() => {
+    return loadingDialogues[Math.floor(Math.random() * loadingDialogues.length)];
+  }, []);
+  if (loading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+      <Loader />
+      <span className="mt-4 text-lg text-blue-600 font-semibold animate-pulse">{randomDialogue}</span>
+    </div>
+  );
   if (error) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded shadow text-center">
