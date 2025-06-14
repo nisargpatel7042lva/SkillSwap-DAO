@@ -14,6 +14,8 @@ interface UserContextType {
   profile: UserProfile | null;
   setProfile: (profile: UserProfile | null) => void;
   refreshProfile: () => Promise<void>;
+  loading: boolean;
+  error: string | null;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -21,18 +23,36 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const { address } = useAccount();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchProfile = async () => {
     if (!address) {
       setProfile(null);
+      setLoading(false);
+      setError(null);
       return;
     }
-    const { data } = await supabase
-      .from("users")
-      .select("username, avatar_url, bio, reputation, created_at")
-      .eq("address", address)
-      .single();
-    if (data) setProfile(data);
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("username, avatar_url, bio, reputation, created_at")
+        .eq("address", address)
+        .single();
+      if (error) {
+        setError(error.message);
+        setProfile(null);
+      } else {
+        setProfile(data);
+      }
+    } catch (err: any) {
+      setError(err.message || "Unknown error");
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -41,7 +61,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   }, [address]);
 
   return (
-    <UserContext.Provider value={{ profile, setProfile, refreshProfile: fetchProfile }}>
+    <UserContext.Provider value={{ profile, setProfile, refreshProfile: fetchProfile, loading, error }}>
       {children}
     </UserContext.Provider>
   );
