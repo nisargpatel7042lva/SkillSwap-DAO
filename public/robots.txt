@@ -1,14 +1,46 @@
+# Allow major search engines
 User-agent: Googlebot
 Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /profile/
+Disallow: /service/*/edit
+Disallow: /project/*/edit
 
 User-agent: Bingbot
 Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /profile/
+Disallow: /service/*/edit
+Disallow: /project/*/edit
 
 User-agent: Twitterbot
 Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /profile/
+Disallow: /service/*/edit
+Disallow: /project/*/edit
 
 User-agent: facebookexternalhit
 Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /profile/
+Disallow: /service/*/edit
+Disallow: /project/*/edit
 
+# Block all other bots
 User-agent: *
-Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /profile/
+Disallow: /service/*/edit
+Disallow: /project/*/edit
+Disallow: /admin/
+Disallow: /private/
+Disallow: /internal/
+
+# Sitemap
+Sitemap: https://your-domain.com/sitemap.xml
