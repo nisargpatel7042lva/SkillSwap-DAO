@@ -1,72 +1,90 @@
 # SkillSwap DAO
 
-<p align="center">
-  <img src="public/SkillSwap DAO Logo Design.png" alt="SkillSwap DAO Logo" width="120" />
-</p>
-
-SkillSwap DAO is a decentralized platform designed to facilitate skill exchange and collaboration among users using blockchain technology. The platform leverages smart contracts to ensure trustless, transparent, and fair skill swaps between participants.
-
-## Table of Contents
-- [Features](#features)
-- [Getting Started](#getting-started)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+SkillSwap DAO is a decentralized platform that enables users to exchange skills and services using blockchain technology. The platform facilitates peer-to-peer skill sharing, project collaboration, and service marketplace functionality.
 
 ## Features
-- Decentralized skill exchange platform
-- Smart contract-powered transactions
-- User profiles and reputation system
-- Secure and transparent swaps
-- Community governance via DAO
+
+- 🔐 Web3 Authentication with RainbowKit
+- 💼 Skill Marketplace
+- 👥 User Profiles
+- 📊 Dashboard
+- 🔍 Search Functionality
+- 📱 Mobile Responsive Design
+- ⭐ Rating System
+- 📅 Booking Management
+- 🎯 Project Management
+
+## Tech Stack
+
+- React + TypeScript
+- Vite
+- Tailwind CSS
+- RainbowKit + wagmi
+- React Router
+- Shadcn UI Components
+
+## Prerequisites
+
+- Node.js (v16 or higher)
+- npm or yarn
+- MetaMask or any Web3 wallet
 
 ## Getting Started
-These instructions will help you set up the project locally for development and testing purposes.
 
-### Prerequisites
-- Node.js (vXX.X.X or higher)
-- npm or yarn
-- [Any other dependencies, e.g., Hardhat, Truffle, etc.]
-
-### Installation
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/nisargpatel7042lva/SkillSwap-DAO.git
-   cd SkillSwap-DAO
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
-3. [Add any additional setup steps, such as configuring environment variables.]
+```bash
+git clone https://github.com/yourusername/SkillSwap-DAO.git
+cd SkillSwap-DAO
+```
 
-### Usage
-- To start the development server:
-  ```bash
-  npm start
-  # or
-  yarn start
-  ```
-- To deploy smart contracts:
-  ```bash
-  [Insert deployment command, e.g., npx hardhat run scripts/deploy.js]
-  ```
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Create a `.env` file in the root directory and add your environment variables:
+```env
+VITE_ALCHEMY_API_KEY=your_alchemy_api_key
+VITE_WALLET_CONNECT_PROJECT_ID=your_wallet_connect_project_id
+```
+
+4. Start the development server:
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+5. Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+## Project Structure
+
+```
+src/
+├── components/     # Reusable UI components
+├── pages/         # Page components
+├── services/      # API and blockchain services
+├── utils/         # Utility functions
+├── hooks/         # Custom React hooks
+├── context/       # React context providers
+├── types/         # TypeScript type definitions
+└── assets/        # Static assets
+```
 
 ## Contributing
-Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/YourFeature`)
-3. Commit your changes (`git commit -m 'Add some feature'`)
-4. Push to the branch (`git push origin feature/YourFeature`)
-5. Open a pull request
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
-This project is licensed under the [MIT License](LICENSE).
 
-## Contact
-For questions or support, please contact [nisargpatel_5565@outlook.com] or open an issue.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For support, email support@skillswapdao.com or join our Discord community.
