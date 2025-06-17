@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -139,12 +140,12 @@ const Index = () => {
           {[
             { name: "Programming", icon: "💻", count: "250+ skills" },
             { name: "Design", icon: "🎨", count: "180+ skills" },
-            { name: "Marketing", icon: "📢", count: "120+ skills" },
-            { name: "Writing", icon: "✍️", count: "90+ skills" },
-            { name: "Music", icon: "🎵", count: "75+ skills" },
-            { name: "Languages", icon: "🗣️", count: "200+ skills" },
-            { name: "Business", icon: "💼", count: "150+ skills" },
-            { name: "Cooking", icon: "👨‍🍳", count: "80+ skills" }
+            { name: "Digital Marketing", icon: "📢", count: "120+ skills" },
+            { name: "Content Writing", icon: "✍️", count: "90+ skills" },
+            { name: "Data Science", icon: "📊", count: "75+ skills" },
+            { name: "Copywriting", icon: "📝", count: "65+ skills" },
+            { name: "DevOps", icon: "⚙️", count: "85+ skills" },
+            { name: "Cybersecurity", icon: "🔒", count: "55+ skills" }
           ].map((category, index) => (
             <Link
               key={category.name}

@@ -21,51 +21,51 @@ const testimonials = [
   },
   {
     name: "David Kim",
-    role: "Marketing Specialist",
-    content: "I've earned tokens teaching digital marketing while learning Python. The DAO governance makes every member feel valued. This is the future! 🌟",
+    role: "Digital Marketing Specialist",
+    content: "I've earned tokens teaching SEO and social media marketing while learning Python. The DAO governance makes every member feel valued. This is the future! 🌟",
     avatar: "📊",
     rating: 5,
-    skill: "Digital Marketing"
+    skill: "Digital Marketing & SEO"
   },
   {
     name: "Sarah Johnson",
-    role: "Content Writer",
-    content: "The skill verification system is brilliant! I've built trust in the community by completing projects. Love how transparent everything is! 📝",
+    role: "Content Writer & Copywriter",
+    content: "The skill verification system is brilliant! I've built trust teaching copywriting and content strategy while learning web development. Love how transparent everything is! 📝",
     avatar: "✍️",
     rating: 5,
-    skill: "Content Writing"
+    skill: "Content Writing & Copywriting"
   },
   {
     name: "Ahmed Hassan",
     role: "Data Scientist",
-    content: "Teaching data analysis while learning game development has been incredible. The rating system ensures quality, and payments are instant! 📈",
+    content: "Teaching data analysis and machine learning while learning game development has been incredible. The rating system ensures quality, and payments are instant! 📈",
     avatar: "🔬",
     rating: 5,
-    skill: "Data Science"
+    skill: "Data Science & ML"
   },
   {
     name: "Elena Kowalski",
-    role: "Language Teacher",
-    content: "I teach Polish and learn graphic design. The community diversity is beautiful, and the platform makes skill exchange so easy! 🗣️",
-    avatar: "🌍",
+    role: "Graphic Designer",
+    content: "I teach graphic design and branding while learning mobile app development. The community diversity is beautiful, and the platform makes skill exchange so easy! 🎨",
+    avatar: "🎨",
     rating: 5,
-    skill: "Language Teaching"
+    skill: "Graphic Design & Branding"
   },
   {
     name: "Jake Thompson",
-    role: "Musician",
-    content: "Trading music lessons for business coaching has opened new opportunities. The DAO model creates a sense of ownership I've never felt before! 🎵",
-    avatar: "🎸",
+    role: "DevOps Engineer",
+    content: "Trading cloud infrastructure knowledge for business coaching has opened new opportunities. The DAO model creates a sense of ownership I've never felt before! ☁️",
+    avatar: "⚙️",
     rating: 5,
-    skill: "Music Production"
+    skill: "DevOps & Cloud"
   },
   {
     name: "Priya Patel",
-    role: "Yoga Instructor",
-    content: "Teaching mindfulness while learning photography has been transformative. The platform brings people together in the most authentic way! 🧘‍♀️",
-    avatar: "🧘‍♀️",
+    role: "Product Manager",
+    content: "Teaching product strategy while learning cybersecurity has been transformative. The platform brings tech professionals together in the most authentic way! 🚀",
+    avatar: "📱",
     rating: 5,
-    skill: "Wellness & Mindfulness"
+    skill: "Product Management"
   }
 ];
 
