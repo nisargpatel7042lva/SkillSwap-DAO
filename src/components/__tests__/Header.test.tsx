@@ -1,27 +1,24 @@
+
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { WagmiConfig, createConfig, configureChains } from 'wagmi';
+import { WagmiProvider, createConfig, http } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
-import { publicProvider } from 'wagmi/providers/public';
 import Header from '../Header';
 
-const { chains, publicClient } = configureChains(
-  [mainnet],
-  [publicProvider()]
-);
-
 const config = createConfig({
-  autoConnect: true,
-  publicClient,
+  chains: [mainnet],
+  transports: {
+    [mainnet.id]: http(),
+  },
 });
 
 const renderWithProviders = (component: React.ReactNode) => {
   return render(
-    <WagmiConfig config={config}>
+    <WagmiProvider config={config}>
       <BrowserRouter>
         {component}
       </BrowserRouter>
-    </WagmiConfig>
+    </WagmiProvider>
   );
 };
 

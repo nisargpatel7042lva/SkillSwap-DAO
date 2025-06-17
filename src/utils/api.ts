@@ -1,3 +1,4 @@
+
 import { SECURITY_CONFIG } from '@/config/security';
 import { sanitizeInput, validateApiRequest } from './security';
 
@@ -34,22 +35,15 @@ class SecureApiClient {
       requireAuth = true,
       requireWallet = false,
       headers = {},
+      body,
       ...restOptions
     } = options;
 
-    // Validate request
-    const request = new Request(`${this.baseUrl}${endpoint}`, {
-      ...restOptions,
-      headers: {
-        ...this.defaultHeaders,
-        ...headers,
-      },
-    });
-
-    const validation = validateApiRequest(request);
-    if (!validation.isValid) {
-      throw new Error(validation.error);
-    }
+    // Prepare headers
+    const requestHeaders = {
+      ...this.defaultHeaders,
+      ...headers,
+    };
 
     // Add authentication headers if required
     if (requireAuth) {
@@ -57,7 +51,7 @@ class SecureApiClient {
       if (!token) {
         throw new Error('Authentication required');
       }
-      request.headers.set('Authorization', `Bearer ${token}`);
+      requestHeaders['Authorization'] = `Bearer ${token}`;
     }
 
     // Add wallet headers if required
@@ -69,19 +63,36 @@ class SecureApiClient {
         throw new Error('Wallet authentication required');
       }
       
-      request.headers.set('X-Wallet-Address', walletAddress);
-      request.headers.set('X-Wallet-Signature', walletSignature);
+      requestHeaders['X-Wallet-Address'] = walletAddress;
+      requestHeaders['X-Wallet-Signature'] = walletSignature;
     }
 
     // Sanitize request body if it exists
-    if (request.body) {
-      const body = await request.json();
-      const sanitizedBody = Object.entries(body).reduce((acc, [key, value]) => {
-        acc[key] = typeof value === 'string' ? sanitizeInput(value) : value;
-        return acc;
-      }, {} as Record<string, any>);
+    let sanitizedBody = body;
+    if (body && typeof body === 'string') {
+      try {
+        const parsedBody = JSON.parse(body);
+        const sanitized = Object.entries(parsedBody).reduce((acc, [key, value]) => {
+          acc[key] = typeof value === 'string' ? sanitizeInput(value) : value;
+          return acc;
+        }, {} as Record<string, any>);
+        sanitizedBody = JSON.stringify(sanitized);
+      } catch (e) {
+        // If body is not JSON, leave it as is
+        sanitizedBody = body;
+      }
+    }
 
-      request.body = JSON.stringify(sanitizedBody);
+    // Create the request
+    const request = new Request(`${this.baseUrl}${endpoint}`, {
+      ...restOptions,
+      headers: requestHeaders,
+      body: sanitizedBody,
+    });
+
+    const validation = validateApiRequest(request);
+    if (!validation.isValid) {
+      throw new Error(validation.error);
     }
 
     try {
