@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Users, Wallet } from "lucide-react";
+import Testimonials from "@/components/Testimonials";
 
 const Index = () => {
   return (
@@ -124,6 +125,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Testimonials Section */}
+      <Testimonials />
 
       {/* Featured Categories */}
       <section className="container mx-auto px-4 py-16">
