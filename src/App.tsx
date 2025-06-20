@@ -1,11 +1,10 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UserProvider, useUser } from "@/components/UserContext";
 import ErrorBoundary from "./components/ErrorBoundary";
-import React, { lazy, Suspense } from "react";
+import React, { lazy, Suspense, useEffect, useState } from "react";
 import Loader from "./components/Loader";
 
 // Lazy load all components including layout components
@@ -42,8 +41,38 @@ const MinimalLoader = () => (
 );
 
 function AppContent() {
-  const { error } = useUser(); // Removed loading dependency
-  
+  const { loading, error } = useUser();
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (!loading) setTimedOut(false);
+    if (loading) {
+      const timeout = setTimeout(() => setTimedOut(true), 10000); // 10s timeout
+      return () => clearTimeout(timeout);
+    }
+  }, [loading]);
+
+  if (loading && !timedOut) {
+    return <CustomLoader />;
+  }
+
+  if (timedOut) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="bg-white p-8 rounded shadow text-center max-w-md">
+          <h2 className="text-xl font-bold text-red-600 mb-4">Loading Timeout</h2>
+          <p className="text-gray-700 mb-4">The app is taking too long to load. Please check your connection or try again.</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
