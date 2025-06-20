@@ -25,7 +25,7 @@ export const UserProvider = React.memo(({ children }: { children: ReactNode }) =
   const { address, isConnected } = useAccount();
   const { data: ensName } = useEnsName({ address });
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // Start with false, not true
   const [error, setError] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async () => {
@@ -110,7 +110,7 @@ export const UserProvider = React.memo(({ children }: { children: ReactNode }) =
     if (isConnected && address) {
       fetchProfile();
     } else {
-      // Clear profile data when wallet is disconnected
+      // Clear profile data when wallet is disconnected and ensure loading is false
       setProfile(null);
       setLoading(false);
       setError(null);

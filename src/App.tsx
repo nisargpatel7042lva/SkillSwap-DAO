@@ -42,9 +42,8 @@ const MinimalLoader = () => (
 );
 
 function AppContent() {
-  const { loading, error } = useUser();
+  const { error } = useUser(); // Removed loading dependency
   
-  // Don't show loading for user context unless it's actually loading
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
