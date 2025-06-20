@@ -1,4 +1,3 @@
-
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
@@ -34,6 +33,8 @@ const config = getDefaultConfig({
   ssr: false, // Disable SSR for client-side rendering
 });
 
+console.log('main.tsx: script loaded');
+
 // Use non-strict mode for better performance in production
 const renderApp = () => (
   <QueryClientProvider client={queryClient}>
@@ -45,4 +46,6 @@ const renderApp = () => (
   </QueryClientProvider>
 );
 
+console.log('main.tsx: about to render app');
 ReactDOM.createRoot(document.getElementById("root")!).render(renderApp());
+console.log('main.tsx: app rendered');

@@ -4,24 +4,20 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UserProvider, useUser } from "@/components/UserContext";
 import ErrorBoundary from "./components/ErrorBoundary";
-import React, { lazy, Suspense, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Loader from "./components/Loader";
-
-// Lazy load all components including layout components
-const Header = lazy(() => import("./components/Header"));
-const Footer = lazy(() => import("./components/Footer"));
-const OnboardingOverlay = lazy(() => import("./components/OnboardingOverlay"));
-const SecurityProvider = lazy(() => import("./components/SecurityProvider"));
-
-// Lazy load pages
-const Index = lazy(() => import("./pages/Index"));
-const Marketplace = lazy(() => import("./pages/Marketplace"));
-const Profile = lazy(() => import("./pages/Profile"));
-const ServiceDetail = lazy(() => import("./pages/ServiceDetail"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const ProjectDetail = lazy(() => import("./pages/ProjectDetail"));
-const About = lazy(() => import("./pages/About"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import OnboardingOverlay from "./components/OnboardingOverlay";
+import SecurityProvider from "./components/SecurityProvider";
+import Index from "./pages/Index";
+import Marketplace from "./pages/Marketplace";
+import Profile from "./pages/Profile";
+import ServiceDetail from "./pages/ServiceDetail";
+import Dashboard from "./pages/Dashboard";
+import ProjectDetail from "./pages/ProjectDetail";
+import About from "./pages/About";
+import NotFound from "./pages/NotFound";
 
 // Custom loading component with your loader
 const CustomLoader = () => (
@@ -91,35 +87,25 @@ function AppContent() {
   }
   
   return (
-    <Suspense fallback={<CustomLoader />}>
-      <SecurityProvider>
-        <div className="min-h-screen flex flex-col bg-gray-50">
-          <Suspense fallback={<div className="h-16 bg-white border-b animate-pulse"></div>}>
-            <Header />
-          </Suspense>
-          <main className="flex-1">
-            <Suspense fallback={<CustomLoader />}>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/marketplace" element={<Marketplace />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/service/:id" element={<ServiceDetail />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/project/:id" element={<ProjectDetail />} />
-                <Route path="/about" element={<About />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </main>
-          <Suspense fallback={<div className="h-16 bg-gray-800 animate-pulse"></div>}>
-            <Footer />
-          </Suspense>
-          <Suspense fallback={null}>
-            <OnboardingOverlay />
-          </Suspense>
-        </div>
-      </SecurityProvider>
-    </Suspense>
+    <SecurityProvider>
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <Header />
+        <main className="flex-1">
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/service/:id" element={<ServiceDetail />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/project/:id" element={<ProjectDetail />} />
+            <Route path="/about" element={<About />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+        <Footer />
+        <OnboardingOverlay />
+      </div>
+    </SecurityProvider>
   );
 }
 
