@@ -1,6 +1,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import Marquee from "@/components/ui/marquee";
+import { memo } from "react";
 
 const testimonials = [
   {
@@ -69,10 +70,12 @@ const testimonials = [
   }
 ];
 
-const firstRow = testimonials.slice(0, testimonials.length / 2);
-const secondRow = testimonials.slice(testimonials.length / 2);
+// Split testimonials once, not on every render
+const firstRow = testimonials.slice(0, 4);
+const secondRow = testimonials.slice(4);
 
-const ReviewCard = ({
+// Memoize ReviewCard to prevent unnecessary re-renders
+const ReviewCard = memo(({
   name,
   role,
   content,
@@ -115,7 +118,9 @@ const ReviewCard = ({
       </CardContent>
     </Card>
   );
-};
+});
+
+ReviewCard.displayName = 'ReviewCard';
 
 export default function Testimonials() {
   return (

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import Loader from './Loader';
 
 interface LoadingSpinnerProps {
@@ -7,7 +7,7 @@ interface LoadingSpinnerProps {
   fullScreen?: boolean;
 }
 
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = memo(({ 
   message = "Loading...", 
   fullScreen = false 
 }) => {
@@ -23,6 +23,8 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       )}
     </div>
   );
-};
+});
+
+LoadingSpinner.displayName = 'LoadingSpinner';
 
 export default LoadingSpinner;
