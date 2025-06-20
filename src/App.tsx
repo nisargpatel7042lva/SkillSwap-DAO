@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UserProvider, useUser } from "@/components/UserContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import React, { lazy, Suspense } from "react";
+import Loader from "./components/Loader";
 
 // Lazy load all components including layout components
 const Header = lazy(() => import("./components/Header"));
@@ -23,30 +24,27 @@ const ProjectDetail = lazy(() => import("./pages/ProjectDetail"));
 const About = lazy(() => import("./pages/About"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Minimal loading component to reduce initial bundle
-const MinimalLoader = () => (
+// Custom loading component with your loader
+const CustomLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    <div className="text-center">
+      <Loader />
+      <p className="mt-4 text-gray-600">Loading...</p>
+    </div>
   </div>
 );
 
-// Optimized loading fallback
-const LoadingFallback = React.memo(() => (
+// Minimal loader for initial app load
+const MinimalLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-      <p className="text-gray-600">Loading...</p>
-    </div>
+    <Loader />
   </div>
-));
+);
 
 function AppContent() {
   const { loading, error } = useUser();
   
-  if (loading) {
-    return <MinimalLoader />;
-  }
-  
+  // Don't show loading for user context unless it's actually loading
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -65,14 +63,14 @@ function AppContent() {
   }
   
   return (
-    <Suspense fallback={<LoadingFallback />}>
+    <Suspense fallback={<CustomLoader />}>
       <SecurityProvider>
         <div className="min-h-screen flex flex-col bg-gray-50">
-          <Suspense fallback={<div className="h-16 bg-white border-b"></div>}>
+          <Suspense fallback={<div className="h-16 bg-white border-b animate-pulse"></div>}>
             <Header />
           </Suspense>
           <main className="flex-1">
-            <Suspense fallback={<LoadingFallback />}>
+            <Suspense fallback={<CustomLoader />}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/marketplace" element={<Marketplace />} />
@@ -85,7 +83,7 @@ function AppContent() {
               </Routes>
             </Suspense>
           </main>
-          <Suspense fallback={<div className="h-16 bg-gray-800"></div>}>
+          <Suspense fallback={<div className="h-16 bg-gray-800 animate-pulse"></div>}>
             <Footer />
           </Suspense>
           <Suspense fallback={null}>
@@ -105,7 +103,9 @@ function App() {
         <Sonner />
         <UserProvider>
           <BrowserRouter>
-            <AppContent />
+            <Suspense fallback={<MinimalLoader />}>
+              <AppContent />
+            </Suspense>
           </BrowserRouter>
         </UserProvider>
       </TooltipProvider>

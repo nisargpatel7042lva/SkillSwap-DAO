@@ -22,14 +22,14 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = React.memo(({ children }: { children: ReactNode }) => {
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
   const { data: ensName } = useEnsName({ address });
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async () => {
-    if (!address) {
+    if (!address || !isConnected) {
       setProfile(null);
       setLoading(false);
       setError(null);
@@ -46,6 +46,7 @@ export const UserProvider = React.memo(({ children }: { children: ReactNode }) =
         .eq("address", address);
         
       if (error) {
+        console.error("Profile fetch error:", error);
         setError(error.message);
         setProfile(null);
       } else if (!data || data.length === 0) {
@@ -66,6 +67,7 @@ export const UserProvider = React.memo(({ children }: { children: ReactNode }) =
           .single();
           
         if (createError) {
+          console.error("Profile creation error:", createError);
           if ((createError.code && createError.code.toString() === '23505') || 
               (createError.message && createError.message.toLowerCase().includes('duplicate key'))) {
             const { data: existingUser, error: fetchExistingError } = await supabase
@@ -95,16 +97,25 @@ export const UserProvider = React.memo(({ children }: { children: ReactNode }) =
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      console.error("UserContext error:", errorMessage);
       setError(errorMessage);
       setProfile(null);
     } finally {
       setLoading(false);
     }
-  }, [address, ensName]);
+  }, [address, ensName, isConnected]);
 
   useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+    // Only fetch profile if wallet is connected
+    if (isConnected && address) {
+      fetchProfile();
+    } else {
+      // Clear profile data when wallet is disconnected
+      setProfile(null);
+      setLoading(false);
+      setError(null);
+    }
+  }, [fetchProfile, isConnected, address]);
 
   const contextValue = useMemo(() => ({
     profile,
