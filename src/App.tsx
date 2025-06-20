@@ -117,9 +117,7 @@ function App() {
         <Sonner />
         <UserProvider>
           <BrowserRouter>
-            <Suspense fallback={<MinimalLoader />}>
-              <AppContent />
-            </Suspense>
+            <AppContent />
           </BrowserRouter>
         </UserProvider>
       </TooltipProvider>

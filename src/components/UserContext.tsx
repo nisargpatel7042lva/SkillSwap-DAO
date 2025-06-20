@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
 import { useAccount, useEnsName } from "wagmi";
 import { supabase } from "@/integrations/supabase/client";
@@ -96,10 +95,17 @@ export const UserProvider = React.memo(({ children }: { children: ReactNode }) =
         setProfile(data[0]);
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      console.error("UserContext error:", errorMessage);
-      setError(errorMessage);
-      setProfile(null);
+      // Handle wallet error code 4001
+      const errorObj = err as { code?: number; message?: string };
+      if (errorObj && (errorObj.code === 4001 || errorObj.message?.includes('wallet must has at least one account'))) {
+        setError("Please connect your wallet and unlock at least one account to use SkillSwap DAO.");
+        setProfile(null);
+      } else {
+        const errorMessage = err instanceof Error ? err.message : "Unknown error";
+        console.error("UserContext error:", errorMessage);
+        setError(errorMessage);
+        setProfile(null);
+      }
     } finally {
       setLoading(false);
     }
