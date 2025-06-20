@@ -3,7 +3,10 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Users, Wallet } from "lucide-react";
-import Testimonials from "@/components/Testimonials";
+import { lazy, Suspense } from "react";
+
+// Lazy load heavy components
+const Testimonials = lazy(() => import("@/components/Testimonials"));
 
 const Index = () => {
   return (
@@ -41,6 +44,7 @@ const Index = () => {
                 src="/SkillSwap DAO Logo Design.png"
                 alt="SkillSwap DAO Logo"
                 className="w-56 h-56 object-contain opacity-80 transform -rotate-2"
+                loading="eager"
               />
             </div>
             <div className="absolute -top-4 -left-4 w-20 h-20 bg-green-100 rounded-2xl border-2 border-dashed border-green-300 flex items-center justify-center transform -rotate-12">
@@ -71,7 +75,7 @@ const Index = () => {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-4">Find Skills 🔍</h3>
                 <p className="text-gray-600">
-                  Browse through hundreds of skills offered by community members. From coding to cooking, find exactly what you need.
+                  Browse through hundreds of tech skills offered by community members. From coding to design, find exactly what you need.
                 </p>
               </CardContent>
             </Card>
@@ -83,7 +87,7 @@ const Index = () => {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-4">Connect 🤝</h3>
                 <p className="text-gray-600">
-                  Connect with skill providers and learners. Build meaningful relationships in our supportive community.
+                  Connect with skill providers and learners. Build meaningful relationships in our supportive tech community.
                 </p>
               </CardContent>
             </Card>
@@ -95,7 +99,7 @@ const Index = () => {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-4">Earn & Learn 💰</h3>
                 <p className="text-gray-600">
-                  Earn tokens by sharing your skills or exchange them to learn new ones. Everyone benefits in our circular economy.
+                  Earn tokens by sharing your tech skills or exchange them to learn new ones. Everyone benefits in our circular economy.
                 </p>
               </CardContent>
             </Card>
@@ -127,8 +131,19 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <Testimonials />
+      {/* Testimonials Section - Lazy loaded */}
+      <Suspense fallback={
+        <div className="py-16 bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50">
+          <div className="container mx-auto px-4 text-center">
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded w-64 mx-auto mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded w-96 mx-auto"></div>
+            </div>
+          </div>
+        </div>
+      }>
+        <Testimonials />
+      </Suspense>
 
       {/* Featured Categories */}
       <section className="container mx-auto px-4 py-16">
@@ -171,7 +186,7 @@ const Index = () => {
             Ready to Start Your Skill Journey? 🎉
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Join thousands of learners and teachers in our vibrant community. Your next skill adventure awaits!
+            Join thousands of learners and teachers in our vibrant tech community. Your next skill adventure awaits!
           </p>
           <Link to="/marketplace">
             <Button size="lg" className="px-12 py-4 hand-drawn-btn bg-blue-500 hover:bg-blue-600 text-white border-blue-600 text-lg transform hover:scale-105 transition-transform">

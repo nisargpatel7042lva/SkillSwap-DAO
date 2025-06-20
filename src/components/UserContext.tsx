@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
 import { useAccount, useEnsName } from "wagmi";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -20,30 +21,30 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export const UserProvider = ({ children }: { children: ReactNode }) => {
+export const UserProvider = React.memo(({ children }: { children: ReactNode }) => {
   const { address } = useAccount();
   const { data: ensName } = useEnsName({ address });
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     if (!address) {
       setProfile(null);
       setLoading(false);
       setError(null);
-      console.log("No address, skipping profile fetch");
       return;
     }
+    
     setLoading(true);
     setError(null);
-    console.log("Fetching profile for address:", address);
+    
     try {
       const { data, error } = await supabase
         .from("users")
         .select("username, avatar_url, bio, reputation, created_at")
         .eq("address", address);
-      console.log("Supabase response:", { data, error });
+        
       if (error) {
         setError(error.message);
         setProfile(null);
@@ -63,29 +64,31 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           ])
           .select("username, avatar_url, bio, reputation, created_at")
           .single();
+          
         if (createError) {
-          // If duplicate key error, fetch the existing user
-          if ((createError.code && createError.code.toString() === '23505') || (createError.message && createError.message.toLowerCase().includes('duplicate key'))) {
+          if ((createError.code && createError.code.toString() === '23505') || 
+              (createError.message && createError.message.toLowerCase().includes('duplicate key'))) {
             const { data: existingUser, error: fetchExistingError } = await supabase
               .from("users")
               .select("username, avatar_url, bio, reputation, created_at")
               .eq("address", address)
               .single();
+              
             if (fetchExistingError) {
-              setError("Failed to fetch existing user profile after duplicate error.");
+              setError("Failed to fetch user profile.");
               setProfile(null);
             } else {
               setProfile(existingUser);
             }
           } else {
-            setError(`Failed to create user profile: ${createError.message || 'Unknown error'}`);
+            setError("Failed to create user profile.");
             setProfile(null);
           }
         } else {
           setProfile(newUser);
         }
       } else if (data.length > 1) {
-        setError("Multiple users found for this wallet address. Please contact support.");
+        setError("Multiple users found. Please contact support.");
         setProfile(null);
       } else {
         setProfile(data[0]);
@@ -94,27 +97,34 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       setError(errorMessage);
       setProfile(null);
-      console.log("Fetch profile error:", err);
     } finally {
       setLoading(false);
-      console.log("Profile fetch complete. Loading:", false);
     }
-  };
+  }, [address, ensName]);
 
   useEffect(() => {
     fetchProfile();
-    // eslint-disable-next-line
-  }, [address, ensName]);
+  }, [fetchProfile]);
+
+  const contextValue = useMemo(() => ({
+    profile,
+    setProfile,
+    refreshProfile: fetchProfile,
+    loading,
+    error,
+  }), [profile, fetchProfile, loading, error]);
 
   return (
-    <UserContext.Provider value={{ profile, setProfile, refreshProfile: fetchProfile, loading, error }}>
+    <UserContext.Provider value={contextValue}>
       {children}
     </UserContext.Provider>
   );
-};
+});
+
+UserProvider.displayName = 'UserProvider';
 
 export const useUser = () => {
   const ctx = useContext(UserContext);
   if (!ctx) throw new Error("useUser must be used within a UserProvider");
   return ctx;
-}; 
+};
