@@ -1,0 +1,84 @@
+{
+  "name": "SkillSwap DAO",
+  "short_name": "SkillSwap",
+  "description": "A decentralized platform for skill exchange, where everyone can learn, teach, and earn.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["education", "business", "productivity"],
+  "icons": [
+    {
+      "src": "/SkillSwap DAO Logo Design.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/SkillSwap DAO Logo Design.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Browse Skills",
+      "short_name": "Skills",
+      "description": "Browse available skills in the marketplace",
+      "url": "/marketplace",
+      "icons": [
+        {
+          "src": "/SkillSwap DAO Logo Design.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View your dashboard and manage your skills",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/SkillSwap DAO Logo Design.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/SkillSwap DAO Logo Design.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "SkillSwap DAO Marketplace"
+    },
+    {
+      "src": "/SkillSwap DAO Logo Design.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "SkillSwap DAO Mobile View"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred",
+  "protocol_handlers": [
+    {
+      "protocol": "web+skillswap",
+      "url": "/?skill=%s"
+    }
+  ]
+} 

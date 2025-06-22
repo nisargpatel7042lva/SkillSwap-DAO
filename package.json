@@ -98,6 +98,7 @@
     "jest-environment-jsdom": "^30.0.0",
     "lovable-tagger": "^1.1.7",
     "postcss": "^8.4.47",
+    "rollup-plugin-visualizer": "^6.0.3",
     "supabase": "^2.23.4",
     "supabase-cli": "^0.0.21",
     "tailwindcss": "^3.4.11",

@@ -2,16 +2,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, User, Wallet, Menu } from "lucide-react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount } from "wagmi";
-import { useUser } from "@/components/UserContext";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import MobileMenu from "./MobileMenu";
+import Loader from "./Loader";
 
-const Header = () => {
-  const { address, isConnected } = useAccount();
-  const { profile } = useUser();
+const Web3Buttons = lazy(() => import('./Web3Buttons'));
+
+const Header = ({ onConnectWallet }: { onConnectWallet?: () => void }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -67,7 +64,7 @@ const Header = () => {
             </div>
 
             {/* Mobile Menu Button */}
-            <button 
+            <button
               className="md:hidden p-2 rounded-lg hover:bg-gray-100"
               onClick={() => setIsMobileMenuOpen(true)}
             >
@@ -76,27 +73,23 @@ const Header = () => {
 
             {/* User Actions */}
             <div className="flex items-center space-x-4">
-              <Link to="/profile">
-                <Button className="border-2 border-dashed border-transparent hover:border-gray-300 rounded-xl flex items-center gap-2">
-                  {isConnected && profile?.avatar_url ? (
-                    <Avatar className="w-6 h-6">
-                      <AvatarImage src={profile.avatar_url} alt={profile.username} />
-                      <AvatarFallback className="text-xs">{profile.username?.[0] || "U"}</AvatarFallback>
-                    </Avatar>
-                  ) : (
-                    <User className="w-4 h-4" />
-                  )}
-                  Profile
+              {onConnectWallet ? (
+                <Button onClick={onConnectWallet} className="border-2 border-dashed border-transparent hover:border-gray-300 rounded-xl flex items-center gap-2">
+                  <Wallet className="w-4 h-4" />
+                  Connect Wallet
                 </Button>
-              </Link>
-              <ConnectButton />
+              ) : (
+                <Suspense fallback={<Loader />}>
+                  <Web3Buttons />
+                </Suspense>
+              )}
             </div>
           </div>
         </div>
       </header>
-      <MobileMenu 
-        isOpen={isMobileMenuOpen} 
-        onClose={() => setIsMobileMenuOpen(false)} 
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
       />
     </>
   );
