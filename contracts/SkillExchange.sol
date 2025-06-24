@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+interface IERC20 {
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function transfer(address to, uint256 amount) external returns (bool);
+}
+
 contract SkillExchange {
     struct Skill {
         uint256 id;
@@ -9,6 +14,7 @@ contract SkillExchange {
         string description;
         uint256 price;
         string category;
+        address tokenAddress; // address(0) for ETH, ERC-20 address for tokens
         bool active;
     }
 
@@ -35,15 +41,24 @@ contract SkillExchange {
     mapping(uint256 => ServiceRequest) public requests;
     mapping(uint256 => Rating[]) public serviceRatings;
 
-    event SkillListed(uint256 indexed skillId, address indexed provider);
-    event ServiceRequested(uint256 indexed requestId, uint256 indexed skillId, address indexed requester);
+    // Simple reentrancy guard
+    uint256 private unlocked = 1;
+    modifier nonReentrant() {
+        require(unlocked == 1, "ReentrancyGuard: reentrant call");
+        unlocked = 0;
+        _;
+        unlocked = 1;
+    }
+
+    event SkillListed(uint256 indexed skillId, address indexed provider, address tokenAddress);
+    event ServiceRequested(uint256 indexed requestId, uint256 indexed skillId, address indexed requester, address tokenAddress, uint256 amount);
     event RequestAccepted(uint256 indexed requestId);
     event ServiceCompleted(uint256 indexed requestId);
-    event PaymentReleased(uint256 indexed requestId, address indexed provider, uint256 amount);
+    event PaymentReleased(uint256 indexed requestId, address indexed provider, uint256 amount, address tokenAddress);
     event ServiceRated(uint256 indexed serviceId, address indexed rater, uint8 rating);
 
-    // List a new skill
-    function listSkill(string memory title, string memory description, uint256 price, string memory category) external {
+    // List a new skill (tokenAddress = address(0) for ETH, or ERC-20 address)
+    function listSkill(string memory title, string memory description, uint256 price, string memory category, address tokenAddress) external {
         skillCount++;
         skills[skillCount] = Skill({
             id: skillCount,
@@ -52,16 +67,24 @@ contract SkillExchange {
             description: description,
             price: price,
             category: category,
+            tokenAddress: tokenAddress,
             active: true
         });
-        emit SkillListed(skillCount, msg.sender);
+        emit SkillListed(skillCount, msg.sender, tokenAddress);
     }
 
-    // Request a service
-    function requestService(uint256 skillId, string memory requirements) external payable {
+    // Request a service (ETH or ERC-20)
+    function requestService(uint256 skillId, string memory requirements) external payable nonReentrant {
         Skill storage skill = skills[skillId];
         require(skill.active, "Skill not active");
-        require(msg.value == skill.price, "Incorrect payment amount");
+        if (skill.tokenAddress == address(0)) {
+            // ETH payment
+            require(msg.value == skill.price, "Incorrect ETH payment amount");
+        } else {
+            // ERC-20 payment
+            require(msg.value == 0, "Do not send ETH for token payment");
+            require(IERC20(skill.tokenAddress).transferFrom(msg.sender, address(this), skill.price), "Token transfer failed");
+        }
         requestCount++;
         requests[requestCount] = ServiceRequest({
             id: requestCount,
@@ -72,7 +95,7 @@ contract SkillExchange {
             completed: false,
             paymentReleased: false
         });
-        emit ServiceRequested(requestCount, skillId, msg.sender);
+        emit ServiceRequested(requestCount, skillId, msg.sender, skill.tokenAddress, skill.price);
     }
 
     // Provider accepts a request
@@ -97,15 +120,21 @@ contract SkillExchange {
     }
 
     // Requester releases payment after completion
-    function releasePayment(uint256 requestId) external {
+    function releasePayment(uint256 requestId) external nonReentrant {
         ServiceRequest storage req = requests[requestId];
         Skill storage skill = skills[req.skillId];
         require(msg.sender == req.requester, "Only requester can release payment");
         require(req.completed, "Service not completed");
         require(!req.paymentReleased, "Payment already released");
         req.paymentReleased = true;
-        payable(skill.provider).transfer(skill.price);
-        emit PaymentReleased(requestId, skill.provider, skill.price);
+        if (skill.tokenAddress == address(0)) {
+            // ETH
+            payable(skill.provider).transfer(skill.price);
+        } else {
+            // ERC-20
+            require(IERC20(skill.tokenAddress).transfer(skill.provider, skill.price), "Token payout failed");
+        }
+        emit PaymentReleased(requestId, skill.provider, skill.price, skill.tokenAddress);
     }
 
     // Requester rates the service

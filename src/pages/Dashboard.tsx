@@ -3,13 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Calendar, TrendingUp, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Plus, Calendar, TrendingUp, Clock, CheckCircle, AlertCircle, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectForm } from "@/components/ProjectForm";
 import BookingManagement from "@/components/BookingManagement";
 import { RatingSystem } from "@/components/RatingSystem";
+import { SkillForm } from "@/components/SkillForm";
+import React from "react";
+import SkillCard from "@/components/SkillCard";
+import type { Tables } from "@/integrations/supabase/types";
 
 interface Project {
   id: number;
@@ -24,10 +28,14 @@ const Dashboard = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showSkillForm, setShowSkillForm] = useState(false);
+  const [mySkills, setMySkills] = useState<Tables<'skills'>[]>([]);
+  const [loadingSkills, setLoadingSkills] = useState(true);
 
   useEffect(() => {
     if (!address) return;
     fetchProjects();
+    fetchMySkills(address, setMySkills, setLoadingSkills);
   }, [address]);
 
   const fetchProjects = async () => {
@@ -85,9 +93,36 @@ const Dashboard = () => {
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard</h1>
         <p className="text-gray-600">Welcome back! Here's what's happening with your projects.</p>
       </div>
-
+      {/* Action Buttons Row */}
+      <div className="flex justify-end gap-2 mb-6">
+        <Button
+          onClick={() => setShowSkillForm(!showSkillForm)}
+          className="border-2 border-dashed border-green-400 bg-green-500 hover:bg-green-600"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          List Skill
+        </Button>
+        <Button
+          onClick={() => setShowNewProjectForm(!showNewProjectForm)}
+          className="border-2 border-dashed border-blue-400 bg-blue-500 hover:bg-blue-600"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          New Project
+        </Button>
+      </div>
+      {showSkillForm && (
+        <div className="mb-6">
+          <SkillForm
+            onSkillCreated={() => {
+              setShowSkillForm(false);
+              fetchMySkills(address, setMySkills, setLoadingSkills);
+            }}
+            onCancel={() => setShowSkillForm(false)}
+          />
+        </div>
+      )}
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <Card className="border-2 border-dashed border-blue-300 bg-blue-50 transform rotate-1">
           <CardContent className="p-6 text-center">
             <TrendingUp className="w-8 h-8 text-blue-600 mx-auto mb-3" />
@@ -95,7 +130,6 @@ const Dashboard = () => {
             <div className="text-sm text-blue-600">Active Projects</div>
           </CardContent>
         </Card>
-        
         <Card className="border-2 border-dashed border-green-300 bg-green-50 transform -rotate-1">
           <CardContent className="p-6 text-center">
             <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-3" />
@@ -103,7 +137,6 @@ const Dashboard = () => {
             <div className="text-sm text-green-600">Completed</div>
           </CardContent>
         </Card>
-        
         <Card className="border-2 border-dashed border-purple-300 bg-purple-50 transform rotate-1">
           <CardContent className="p-6 text-center">
             <Clock className="w-8 h-8 text-purple-600 mx-auto mb-3" />
@@ -111,7 +144,6 @@ const Dashboard = () => {
             <div className="text-sm text-purple-600">Planning</div>
           </CardContent>
         </Card>
-        
         <Card className="border-2 border-dashed border-orange-300 bg-orange-50 transform -rotate-1">
           <CardContent className="p-6 text-center">
             <Calendar className="w-8 h-8 text-orange-600 mx-auto mb-3" />
@@ -119,14 +151,21 @@ const Dashboard = () => {
             <div className="text-sm text-orange-600">Total Projects</div>
           </CardContent>
         </Card>
+        <Card className="border-2 border-dashed border-pink-300 bg-pink-50 transform rotate-1">
+          <CardContent className="p-6 text-center">
+            <Users className="w-8 h-8 text-pink-600 mx-auto mb-3" />
+            <div className="text-2xl font-bold text-pink-700">{mySkills.length}</div>
+            <div className="text-sm text-pink-600">Listed Skills</div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Main Content */}
       <Tabs defaultValue="projects" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8 bg-gray-100 border-2 border-dashed border-gray-300">
+        <TabsList className="grid w-full grid-cols-3 bg-gray-100 border-2 border-dashed border-gray-300">
           <TabsTrigger value="projects">My Projects</TabsTrigger>
           <TabsTrigger value="bookings">My Bookings</TabsTrigger>
-          <TabsTrigger value="ratings">Rate Services</TabsTrigger>
+          <TabsTrigger value="skills">Listed Skills</TabsTrigger>
         </TabsList>
 
         <TabsContent value="projects">
@@ -201,17 +240,70 @@ const Dashboard = () => {
           <BookingManagement />
         </TabsContent>
 
-        <TabsContent value="ratings">
-          <Card className="border-2 border-dashed border-gray-300">
-            <CardContent className="p-8 text-center">
-              <p className="text-gray-600 mb-4">Rate completed services here</p>
-              <p className="text-sm text-gray-500">Complete a service booking to see rating options</p>
-            </CardContent>
-          </Card>
+        <TabsContent value="skills">
+          <div className="mb-10">
+            <h2 className="text-2xl font-bold mb-4">My Listed Skills</h2>
+            {loadingSkills ? (
+              <Card className="border-2 border-dashed border-gray-300">
+                <CardContent className="p-8 text-center">
+                  <p className="text-gray-600">Loading your skills...</p>
+                </CardContent>
+              </Card>
+            ) : mySkills.length === 0 ? (
+              <Card className="border-2 border-dashed border-gray-300">
+                <CardContent className="p-8 text-center">
+                  <p className="text-gray-600">You haven't listed any skills yet.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {mySkills.map((skill) => (
+                  <SkillCard
+                    key={skill.id}
+                    id={String(skill.id)}
+                    title={skill.title}
+                    description={skill.description}
+                    price={skill.price + " SKILL"}
+                    provider={{ name: "You", avatar: skill.illustration_url || "/placeholder-avatar.jpg", rating: 0 }}
+                    category={skill.category || "Other"}
+                    image={skill.illustration_url || undefined}
+                    viewMode="grid"
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
     </div>
   );
+};
+
+const fetchMySkills = async (
+  address: string,
+  setMySkills: React.Dispatch<React.SetStateAction<Tables<'skills'>[]>>,
+  setLoadingSkills: React.Dispatch<React.SetStateAction<boolean>>
+) => {
+  if (!address) return;
+  setLoadingSkills(true);
+  try {
+    const { data, error } = await supabase
+      .from("skills")
+      .select("*")
+      .eq("user_id", address)
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("Error fetching skills:", error);
+      setMySkills([]);
+      return;
+    }
+    setMySkills(data || []);
+  } catch (error) {
+    console.error("Error fetching skills:", error);
+    setMySkills([]);
+  } finally {
+    setLoadingSkills(false);
+  }
 };
 
 export default Dashboard;

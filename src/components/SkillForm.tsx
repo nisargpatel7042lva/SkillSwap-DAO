@@ -1,0 +1,186 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAccount } from "wagmi";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface SkillFormProps {
+  onSkillCreated: () => void;
+  onCancel: () => void;
+}
+
+export const SkillForm = ({ onSkillCreated, onCancel }: SkillFormProps) => {
+  const { address } = useAccount();
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    price: "",
+    category: "",
+    illustration_url: ""
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleImageUpload = async (file: File) => {
+    setUploading(true);
+    setErrorMsg(null);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+      const { data, error } = await supabase.storage.from('skill-images').upload(fileName, file);
+      if (error) throw error;
+      const { data: publicUrlData } = supabase.storage.from('skill-images').getPublicUrl(fileName);
+      setFormData((prev) => ({ ...prev, illustration_url: publicUrlData.publicUrl }));
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    if (!address) return;
+    if (!formData.title.trim() || !formData.description.trim() || !formData.price || !formData.category) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("skills")
+        .insert({
+          title: formData.title,
+          description: formData.description,
+          price: Number(formData.price),
+          category: formData.category,
+          illustration_url: formData.illustration_url || null,
+          user_id: address
+        });
+      if (error) {
+        setErrorMsg(error.message || 'Failed to list skill');
+        toast.error(error.message || 'Failed to list skill');
+        return;
+      }
+      toast.success("Skill listed successfully!");
+      onSkillCreated();
+      setFormData({ title: "", description: "", price: "", category: "", illustration_url: "" });
+    } catch (error: any) {
+      setErrorMsg(error.message || 'An error occurred while listing the skill');
+      toast.error(error.message || 'An error occurred while listing the skill');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Card className="border-2 border-dashed border-gray-300 bg-blue-50">
+      <CardHeader>
+        <CardTitle>List a New Skill</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Title *</label>
+            <Input
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="Skill title"
+              className="border-2 border-dashed border-gray-300"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Description *</label>
+            <Textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Skill description"
+              rows={3}
+              className="border-2 border-dashed border-gray-300"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Price (in SKILL) *</label>
+            <Input
+              type="number"
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+              placeholder="Enter price"
+              className="border-2 border-dashed border-gray-300"
+              required
+              min={0}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Category *</label>
+            <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+              <SelectTrigger className="border-2 border-dashed border-gray-300">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Programming">Programming</SelectItem>
+                <SelectItem value="Design">Design</SelectItem>
+                <SelectItem value="Marketing">Marketing</SelectItem>
+                <SelectItem value="Writing">Writing</SelectItem>
+                <SelectItem value="Languages">Languages</SelectItem>
+                <SelectItem value="Business">Business</SelectItem>
+                <SelectItem value="Music">Music</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Image (optional)</label>
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                if (e.target.files && e.target.files[0]) {
+                  await handleImageUpload(e.target.files[0]);
+                }
+              }}
+              className="border-2 border-dashed border-gray-300"
+              disabled={uploading}
+            />
+            {uploading && <div className="text-blue-500 text-xs mt-1">Uploading image...</div>}
+            {formData.illustration_url && (
+              <img src={formData.illustration_url} alt="Preview" className="mt-2 w-32 h-32 object-cover rounded border" />
+            )}
+          </div>
+
+          {errorMsg && <div className="text-red-500 text-sm mb-2">{errorMsg}</div>}
+
+          <div className="flex gap-2">
+            <Button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="bg-blue-500 hover:bg-blue-600"
+            >
+              {isSubmitting ? "Listing..." : "List Skill"}
+            </Button>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onCancel}
+              className="border-2 border-dashed border-gray-300"
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}; 

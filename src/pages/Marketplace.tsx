@@ -4,143 +4,48 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SkillCard from "@/components/SkillCard";
 import { Search, Filter, Grid, List } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
 const Marketplace = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isVisible, setIsVisible] = useState<boolean[]>([]);
+  type SkillWithUser = Tables<"skills"> & { user?: Pick<Tables<"users">, "username" | "avatar_url" | "reputation"> };
+  const [skills, setSkills] = useState<SkillWithUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Mock data for skills
-  const skills = [
-    {
-      id: "1",
-      title: "React Development Bootcamp",
-      description: "Learn modern React development with hooks, context, and best practices. Perfect for beginners and intermediate developers.",
-      price: "50 SKILL",
-      provider: {
-        name: "Alex Chen",
-        avatar: "/placeholder-avatar.jpg",
-        rating: 4.9
-      },
-      category: "Programming"
-    },
-    {
-      id: "2",
-      title: "UI/UX Design Fundamentals",
-      description: "Master the principles of user interface and user experience design. Create beautiful, functional designs that users love.",
-      price: "40 SKILL",
-      provider: {
-        name: "Sarah Wilson",
-        avatar: "/placeholder-avatar.jpg",
-        rating: 4.8
-      },
-      category: "Design"
-    },
-    {
-      id: "3",
-      title: "Digital Marketing Strategy",
-      description: "Build comprehensive marketing campaigns that drive results. Learn SEO, social media, and content marketing strategies.",
-      price: "45 SKILL",
-      provider: {
-        name: "Mike Johnson",
-        avatar: "/placeholder-avatar.jpg",
-        rating: 4.7
-      },
-      category: "Marketing"
-    },
-    {
-      id: "4",
-      title: "Creative Writing Workshop",
-      description: "Develop your storytelling skills and find your unique voice. Perfect for aspiring authors and content creators.",
-      price: "30 SKILL",
-      provider: {
-        name: "Emma Davis",
-        avatar: "/placeholder-avatar.jpg",
-        rating: 4.9
-      },
-      category: "Writing"
-    },
-    {
-      id: "5",
-      title: "Spanish Conversation Practice",
-      description: "Improve your Spanish speaking skills through interactive conversations and cultural immersion.",
-      price: "25 SKILL",
-      provider: {
-        name: "Carlos Rodriguez",
-        avatar: "/placeholder-avatar.jpg",
-        rating: 4.8
-      },
-      category: "Languages"
-    },
-    {
-      id: "6",
-      title: "Photography Masterclass",
-      description: "Learn professional photography techniques, from composition to post-processing. Includes hands-on practice sessions.",
-      price: "55 SKILL",
-      provider: {
-        name: "Lisa Zhang",
-        avatar: "/placeholder-avatar.jpg",
-        rating: 4.9
-      },
-      category: "Design"
-    },
-    {
-      id: "101",
-      title: "Web3 Smart Contract Bootcamp",
-      description: "Learn to write, deploy, and audit smart contracts on Ethereum using Solidity and Hardhat.",
-      price: "100 SKILL",
-      provider: {
-        name: "Priya Sharma",
-        avatar: "/placeholder-avatar.jpg",
-        rating: 4.9
-      },
-      category: "Programming"
-    },
-    {
-      id: "102",
-      title: "Cartoon Sketching for Beginners",
-      description: "Master the basics of cartoon sketching and character design with fun, hands-on lessons.",
-      price: "30 SKILL",
-      provider: {
-        name: "Ravi Patel",
-        avatar: "/placeholder-avatar.jpg",
-        rating: 4.8
-      },
-      category: "Design"
-    },
-    {
-      id: "103",
-      title: "Digital Marketing 101",
-      description: "Kickstart your marketing career with SEO, social media, and content strategy essentials.",
-      price: "50 SKILL",
-      provider: {
-        name: "Aisha Khan",
-        avatar: "/placeholder-avatar.jpg",
-        rating: 4.7
-      },
-      category: "Marketing"
-    },
-    {
-      id: "104",
-      title: "Creative Writing Workshop",
-      description: "Unlock your creativity and learn storytelling techniques from published authors.",
-      price: "40 SKILL",
-      provider: {
-        name: "John Lee",
-        avatar: "/placeholder-avatar.jpg",
-        rating: 4.9
-      },
-      category: "Writing"
-    }
+  useEffect(() => {
+    const fetchSkills = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data, error } = await supabase
+          .from("skills")
+          .select(`*, user:users(username, avatar_url, reputation)`)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        setSkills((data as SkillWithUser[]) || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load skills");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSkills();
+  }, []);
+
+  const categories = [
+    "all",
+    ...Array.from(new Set(skills.map((s) => s.category).filter(Boolean)))
   ];
 
-  const categories = ["all", "Programming", "Design", "Marketing", "Writing", "Languages", "Business", "Music"];
-
-  const filteredSkills = skills.filter(skill => {
-    const matchesSearch = skill.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         skill.description.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredSkills = skills.filter((skill) => {
+    const matchesSearch = (skill.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (skill.description || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "all" || skill.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -152,27 +57,32 @@ const Marketplace = () => {
         entries.forEach((entry, index) => {
           if (entry.isIntersecting) {
             setTimeout(() => {
-              setIsVisible(prev => {
+              setIsVisible((prev) => {
                 const newVisible = [...prev];
                 newVisible[index] = true;
                 return newVisible;
               });
-            }, index * 100); // Staggered animation
+            }, index * 100);
           }
         });
       },
       {
         threshold: 0.1,
-        rootMargin: "0px 0px -50px 0px"
+        rootMargin: "0px 0px -50px 0px",
       }
     );
-
     cardsRef.current.forEach((card) => {
       if (card) observer.observe(card);
     });
-
     return () => observer.disconnect();
   }, [filteredSkills]);
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading skills...</div>;
+  }
+  if (error) {
+    return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -186,7 +96,6 @@ const Marketplace = () => {
             Discover amazing skills from our community of talented individuals
           </p>
         </div>
-
         {/* Search and Filters */}
         <div className="mb-8 space-y-4">
           {/* Search Bar */}
@@ -199,7 +108,6 @@ const Marketplace = () => {
               className="pl-12 pr-4 rounded-2xl border-2 border-gray-200 focus:border-blue-400 h-14 bg-white/80 backdrop-blur-sm text-gray-900 shadow-lg transition-all duration-300 hover:shadow-xl"
             />
           </div>
-          
           {/* Filters Row */}
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -214,15 +122,13 @@ const Marketplace = () => {
                 ))}
               </SelectContent>
             </Select>
-            
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="rounded-2xl border-2 h-12 px-6 bg-white/80 backdrop-blur-sm text-gray-900 border-gray-200 shadow-lg transition-all duration-300 hover:shadow-xl flex items-center gap-2"
             >
               <Filter className="w-4 h-4" />
               Filters
             </Button>
-
             {/* View Mode Toggle */}
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-2xl border-2 border-gray-200 p-1 shadow-lg">
               <Button
@@ -244,7 +150,6 @@ const Marketplace = () => {
             </div>
           </div>
         </div>
-
         {/* Results Count */}
         <div className="mb-6 text-center">
           <p className="text-gray-600 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 inline-block border border-gray-200">
@@ -252,11 +157,10 @@ const Marketplace = () => {
             {selectedCategory !== "all" && ` in ${selectedCategory}`}
           </p>
         </div>
-
         {/* Skills Grid/List */}
         <div className={`${
-          viewMode === "grid" 
-            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" 
+          viewMode === "grid"
+            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
             : "space-y-4"
         }`}>
           {filteredSkills.map((skill, index) => (
@@ -264,27 +168,42 @@ const Marketplace = () => {
               key={skill.id}
               ref={(el) => (cardsRef.current[index] = el)}
               className={`transform transition-all duration-700 ease-out ${
-                isVisible[index] 
-                  ? "opacity-100 translate-y-0 scale-100" 
+                isVisible[index]
+                  ? "opacity-100 translate-y-0 scale-100"
                   : "opacity-0 translate-y-8 scale-95"
               }`}
               style={{
-                transitionDelay: `${index * 100}ms`
+                transitionDelay: `${index * 100}ms`,
               }}
             >
-              <SkillCard {...skill} viewMode={viewMode} />
+              <SkillCard
+                id={String(skill.id)}
+                title={skill.title}
+                description={skill.description}
+                price={skill.price + " SKILL"}
+                provider={{
+                  name: skill.user?.username || "Unknown",
+                  avatar: skill.user?.avatar_url || "/placeholder-avatar.jpg",
+                  rating: skill.user?.reputation || 0,
+                }}
+                category={skill.category || "Other"}
+                image={skill.illustration_url || undefined}
+                viewMode={viewMode}
+              />
             </div>
           ))}
         </div>
-
         {/* No Results */}
         {filteredSkills.length === 0 && (
           <div className="text-center py-16 animate-fade-in">
             <div className="text-6xl mb-4 animate-bounce">🔍</div>
             <h3 className="text-2xl font-semibold text-gray-800 mb-2">No skills found</h3>
             <p className="text-gray-600 mb-6">Try adjusting your search terms or category filter</p>
-            <Button 
-              onClick={() => { setSearchTerm(""); setSelectedCategory("all"); }} 
+            <Button
+              onClick={() => {
+                setSearchTerm("");
+                setSelectedCategory("all");
+              }}
               className="rounded-xl bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 transition-all duration-300 hover:scale-105"
             >
               Clear Filters
