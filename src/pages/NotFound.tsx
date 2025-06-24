@@ -2,7 +2,6 @@
 import React from "react";
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
-import { useAccount } from "wagmi";
 import styled from "styled-components";
 import { Button } from "@/components/ui/button";
 import { Home, Wallet } from "lucide-react";
@@ -448,7 +447,18 @@ const StyledWrapper = styled.div`
 
 const NotFound = () => {
   const location = useLocation();
-  const { isConnected } = useAccount();
+  
+  // Safe wallet connection check - only use wagmi hooks if available
+  let isConnected = false;
+  try {
+    // Dynamic import to avoid errors when wagmi provider is not available
+    const { useAccount } = require("wagmi");
+    const { isConnected: walletConnected } = useAccount();
+    isConnected = walletConnected;
+  } catch (error) {
+    // Wagmi provider not available, wallet is not connected
+    isConnected = false;
+  }
 
   useEffect(() => {
     console.error(
