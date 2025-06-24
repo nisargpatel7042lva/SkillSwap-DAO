@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAccount } from "wagmi";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { BookingConfirmationDialog } from "./BookingConfirmationDialog";
 
 interface BookingFormProps {
   skill: {
@@ -26,8 +27,9 @@ export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormPro
   const { address, isConnected } = useAccount();
   const [requirements, setRequirements] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isConnected || !address) {
       toast.error("Please connect your wallet first");
@@ -39,7 +41,18 @@ export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormPro
       return;
     }
 
+    // Check if user has disabled the confirmation dialog
+    const hideDialog = localStorage.getItem('hideBookingConfirmDialog') === 'true';
+    if (hideDialog) {
+      handleBookingSubmit();
+    } else {
+      setShowConfirmDialog(true);
+    }
+  };
+
+  const handleBookingSubmit = async () => {
     setIsSubmitting(true);
+    setShowConfirmDialog(false);
 
     try {
       // Get or create user
@@ -90,61 +103,72 @@ export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormPro
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto border-2 border-dashed border-gray-300">
-      <CardHeader>
-        <CardTitle className="text-xl">Book Service</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div>
-            <h3 className="font-semibold">{skill.title}</h3>
-            <Badge variant="outline" className="mt-1">{skill.price}</Badge>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <img 
-              src={skill.provider.avatar} 
-              alt={skill.provider.name}
-              className="w-8 h-8 rounded-full border-2 border-dashed border-gray-300"
-            />
-            <span className="text-sm text-gray-600">Provider: {skill.provider.name}</span>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
+    <>
+      <Card className="w-full max-w-md mx-auto border-2 border-dashed border-gray-300">
+        <CardHeader>
+          <CardTitle className="text-xl">Book Service</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Describe your requirements *
-              </label>
-              <Textarea
-                value={requirements}
-                onChange={(e) => setRequirements(e.target.value)}
-                placeholder="Please describe what you need, timeline, specific requirements..."
-                rows={4}
-                className="border-2 border-dashed border-gray-300"
-                required
+              <h3 className="font-semibold">{skill.title}</h3>
+              <Badge variant="outline" className="mt-1">{skill.price}</Badge>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <img 
+                src={skill.provider.avatar} 
+                alt={skill.provider.name}
+                className="w-8 h-8 rounded-full border-2 border-dashed border-gray-300"
               />
+              <span className="text-sm text-gray-600">Provider: {skill.provider.name}</span>
             </div>
 
-            <div className="flex gap-2">
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="flex-1 bg-blue-500 hover:bg-blue-600"
-              >
-                {isSubmitting ? "Submitting..." : "Send Booking Request"}
-              </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={onClose}
-                className="border-2 border-dashed border-gray-300"
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </div>
-      </CardContent>
-    </Card>
+            <form onSubmit={handleFormSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Describe your requirements *
+                </label>
+                <Textarea
+                  value={requirements}
+                  onChange={(e) => setRequirements(e.target.value)}
+                  placeholder="Please describe what you need, timeline, specific requirements..."
+                  rows={4}
+                  className="border-2 border-dashed border-gray-300"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600"
+                >
+                  {isSubmitting ? "Submitting..." : "Send Booking Request"}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={onClose}
+                  className="border-2 border-dashed border-gray-300"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </div>
+        </CardContent>
+      </Card>
+
+      <BookingConfirmationDialog
+        isOpen={showConfirmDialog}
+        onClose={() => setShowConfirmDialog(false)}
+        onConfirm={handleBookingSubmit}
+        serviceName={skill.title}
+        providerName={skill.provider.name}
+        price={skill.price}
+      />
+    </>
   );
 };

@@ -43,7 +43,7 @@ export type Database = {
             columns: ["requester_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedColumns: ["address"]
           },
           {
             foreignKeyName: "bookings_skill_id_fkey"
@@ -112,7 +112,7 @@ export type Database = {
             columns: ["rater_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedColumns: ["address"]
           },
           {
             foreignKeyName: "ratings_service_id_fkey"
@@ -160,7 +160,7 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedColumns: ["address"]
           },
         ]
       }
