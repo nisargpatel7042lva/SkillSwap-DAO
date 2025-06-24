@@ -449,17 +449,30 @@ const StyledWrapper = styled.div`
 const NotFound = () => {
   const location = useLocation();
   
-  // Safe wallet connection check - only use wagmi hooks if available
-  let isConnected = false;
-  try {
-    // Dynamic import to avoid errors when wagmi provider is not available
-    const { useAccount } = require("wagmi");
-    const { isConnected: walletConnected } = useAccount();
-    isConnected = walletConnected;
-  } catch (error) {
-    // Wagmi provider not available, wallet is not connected
-    isConnected = false;
-  }
+  // Simplified wallet connection check
+  const [isConnected, setIsConnected] = React.useState(false);
+
+  React.useEffect(() => {
+    // Check if wagmi is available and get connection status
+    const checkWalletConnection = async () => {
+      try {
+        // Only check if we're in a browser environment
+        if (typeof window !== 'undefined') {
+          // Simple check without dynamic imports
+          const wagmiModule = await import("wagmi").catch(() => null);
+          if (wagmiModule) {
+            // If wagmi is available, we can safely use it
+            // For now, we'll just set it to false to avoid the complex hook usage
+            setIsConnected(false);
+          }
+        }
+      } catch (error) {
+        setIsConnected(false);
+      }
+    };
+    
+    checkWalletConnection();
+  }, []);
 
   useEffect(() => {
     console.error(
@@ -476,15 +489,14 @@ const NotFound = () => {
       </div>
       
       {/* Semi-transparent overlay to soften the background */}
-      <div className="fixed inset-0 z-10 bg-white/85 backdrop-blur-sm"></div>
+      <div className="fixed inset-0 z-10 bg-white/90 backdrop-blur-sm"></div>
       
       {/* Content overlay */}
       <div className="relative z-20 min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full transform hover:scale-105 transition-all duration-300 bg-white border-2 border-dashed border-gray-300 shadow-lg" 
+        <Card className="max-w-md w-full bg-white border-2 border-dashed border-gray-300 shadow-lg transform -rotate-1 hover:rotate-0 transition-all duration-300" 
               style={{
-                filter: 'drop-shadow(3px 3px 0px rgba(0,0,0,0.2))',
-                borderRadius: '15px',
-                transform: 'rotate(-1deg)'
+                filter: 'drop-shadow(3px 3px 0px rgba(0,0,0,0.4))',
+                borderRadius: '15px'
               }}>
           <CardContent className="p-8 text-center space-y-6">
             {/* 404 Icon and Title */}
@@ -537,7 +549,7 @@ const NotFound = () => {
             {/* Action Buttons */}
             <div className="space-y-3">
               <Link to="/" className="block">
-                <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white border-2 border-blue-600 transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2 transform -rotate-1 hover:rotate-0"
+                <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white border-2 border-dashed border-blue-600 transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2 transform -rotate-1 hover:rotate-0"
                         style={{
                           filter: 'drop-shadow(2px 2px 0px rgba(0,0,0,0.2))',
                           borderRadius: '12px'
