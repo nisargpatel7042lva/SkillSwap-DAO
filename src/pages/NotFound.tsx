@@ -1,10 +1,10 @@
-
 import React from "react";
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import styled from "styled-components";
 import { Button } from "@/components/ui/button";
-import { Home, Wallet } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Home, Wallet, AlertTriangle } from "lucide-react";
 
 const Pattern = () => {
   return (
@@ -468,48 +468,83 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden bg-gray-50">
       {/* Pattern Background - Fixed positioning to cover entire viewport */}
-      <div className="fixed inset-0 z-0">
+      <div className="fixed inset-0 z-0 opacity-30">
         <Pattern />
       </div>
       
+      {/* Dotted background pattern matching the theme */}
+      <div className="fixed inset-0 z-0" 
+           style={{
+             backgroundImage: 'radial-gradient(circle at 20px 20px, rgba(0,0,0,0.05) 1px, transparent 1px)',
+             backgroundSize: '40px 40px'
+           }}>
+      </div>
+      
       {/* Content overlay */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-6 bg-black/70 backdrop-blur-sm p-8 rounded-2xl border border-gray-700 max-w-md mx-4">
-          {/* 404 Title */}
-          <div className="space-y-2">
-            <h1 className="text-6xl font-bold text-white mb-2">404</h1>
-            <h2 className="text-2xl font-semibold text-red-400">Page Not Found</h2>
-          </div>
-          
-          {/* Description */}
-          <p className="text-gray-300 text-lg">
-            The page you're looking for has vanished into the darkness...
-          </p>
-          
-          {/* Wallet Status */}
-          <div className="flex items-center justify-center space-x-2 text-sm">
-            <Wallet className="w-4 h-4" />
-            <span className={`${isConnected ? 'text-green-400' : 'text-yellow-400'}`}>
-              Wallet: {isConnected ? 'Connected' : 'Not Connected'}
-            </span>
-          </div>
-          
-          {!isConnected && (
-            <div className="text-orange-400 text-sm bg-orange-900/30 p-3 rounded-lg border border-orange-700">
-              💡 Some features require wallet connection
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+        <Card className="sketch-border doodle-shadow max-w-md w-full transform hover:scale-105 transition-all duration-300 bg-white/95 backdrop-blur-sm">
+          <CardContent className="p-8 text-center space-y-6">
+            {/* 404 Icon and Title */}
+            <div className="space-y-4">
+              <div className="relative mx-auto w-20 h-20 bg-red-50 rounded-full border-2 border-dashed border-red-300 flex items-center justify-center">
+                <AlertTriangle className="w-10 h-10 text-red-500" />
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-200 rounded-full border border-gray-300 flex items-center justify-center text-xs transform rotate-12">
+                  ❗
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <h1 className="text-5xl font-bold text-gray-800 scribble-underline">404</h1>
+                <h2 className="text-xl font-semibold text-red-500 wobble-1">Oops! Page Not Found</h2>
+              </div>
             </div>
-          )}
-          
-          {/* Home Button */}
-          <Link to="/">
-            <Button className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 flex items-center space-x-2 mx-auto">
-              <Home className="w-4 h-4" />
-              <span>Return to Home</span>
-            </Button>
-          </Link>
-        </div>
+            
+            {/* Description */}
+            <div className="bg-gray-50 p-4 rounded-lg border border-dashed border-gray-300">
+              <p className="text-gray-600 text-sm leading-relaxed">
+                The page you're looking for seems to have vanished into the digital void! 
+                Don't worry, it happens to the best of us. ✨
+              </p>
+            </div>
+            
+            {/* Wallet Status */}
+            <div className="bg-blue-50 p-3 rounded-lg border border-dashed border-blue-200">
+              <div className="flex items-center justify-center space-x-2 text-sm">
+                <Wallet className="w-4 h-4" />
+                <span className="font-medium text-gray-700">Wallet Status:</span>
+                <span className={`font-semibold px-2 py-1 rounded-full border border-dashed text-xs ${
+                  isConnected 
+                    ? 'text-green-600 bg-green-50 border-green-200' 
+                    : 'text-orange-600 bg-orange-50 border-orange-200'
+                }`}>
+                  {isConnected ? '✅ Connected' : '⚠️ Not Connected'}
+                </span>
+              </div>
+              
+              {!isConnected && (
+                <div className="mt-2 text-xs text-orange-600 bg-orange-100 p-2 rounded border border-dashed border-orange-200">
+                  💡 Connect your wallet to access all features
+                </div>
+              )}
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <Link to="/" className="block">
+                <Button className="w-full hand-drawn-btn bg-blue-500 hover:bg-blue-600 text-white border-blue-600 transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2">
+                  <Home className="w-4 h-4" />
+                  <span>Take Me Home 🏠</span>
+                </Button>
+              </Link>
+              
+              <div className="text-xs text-gray-500 italic">
+                "Not all who wander are lost... but this page definitely is!" 📍
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
