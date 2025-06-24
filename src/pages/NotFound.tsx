@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
@@ -468,27 +469,27 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gray-50">
+    <div className="min-h-screen relative overflow-hidden">
       {/* Pattern Background - Fixed positioning to cover entire viewport */}
-      <div className="fixed inset-0 z-0 opacity-30">
+      <div className="fixed inset-0 z-0">
         <Pattern />
       </div>
       
-      {/* Dotted background pattern matching the theme */}
-      <div className="fixed inset-0 z-0" 
-           style={{
-             backgroundImage: 'radial-gradient(circle at 20px 20px, rgba(0,0,0,0.05) 1px, transparent 1px)',
-             backgroundSize: '40px 40px'
-           }}>
-      </div>
+      {/* Semi-transparent overlay to soften the background */}
+      <div className="fixed inset-0 z-10 bg-white/85 backdrop-blur-sm"></div>
       
       {/* Content overlay */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <Card className="sketch-border doodle-shadow max-w-md w-full transform hover:scale-105 transition-all duration-300 bg-white/95 backdrop-blur-sm">
+      <div className="relative z-20 min-h-screen flex items-center justify-center p-4">
+        <Card className="max-w-md w-full transform hover:scale-105 transition-all duration-300 bg-white border-2 border-dashed border-gray-300 shadow-lg" 
+              style={{
+                filter: 'drop-shadow(3px 3px 0px rgba(0,0,0,0.2))',
+                borderRadius: '15px',
+                transform: 'rotate(-1deg)'
+              }}>
           <CardContent className="p-8 text-center space-y-6">
             {/* 404 Icon and Title */}
             <div className="space-y-4">
-              <div className="relative mx-auto w-20 h-20 bg-red-50 rounded-full border-2 border-dashed border-red-300 flex items-center justify-center">
+              <div className="relative mx-auto w-20 h-20 bg-red-50 rounded-full border-2 border-dashed border-red-300 flex items-center justify-center transform rotate-3">
                 <AlertTriangle className="w-10 h-10 text-red-500" />
                 <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-200 rounded-full border border-gray-300 flex items-center justify-center text-xs transform rotate-12">
                   ❗
@@ -496,13 +497,16 @@ const NotFound = () => {
               </div>
               
               <div className="space-y-2">
-                <h1 className="text-5xl font-bold text-gray-800 scribble-underline">404</h1>
-                <h2 className="text-xl font-semibold text-red-500 wobble-1">Oops! Page Not Found</h2>
+                <h1 className="text-5xl font-bold text-gray-800 relative inline-block">
+                  404
+                  <div className="absolute -bottom-2 left-0 w-full h-2 bg-yellow-200 transform -rotate-1 rounded-full opacity-60"></div>
+                </h1>
+                <h2 className="text-xl font-semibold text-red-500 transform rotate-1">Oops! Page Not Found</h2>
               </div>
             </div>
             
             {/* Description */}
-            <div className="bg-gray-50 p-4 rounded-lg border border-dashed border-gray-300">
+            <div className="bg-gray-50 p-4 rounded-lg border border-dashed border-gray-300 transform -rotate-1">
               <p className="text-gray-600 text-sm leading-relaxed">
                 The page you're looking for seems to have vanished into the digital void! 
                 Don't worry, it happens to the best of us. ✨
@@ -510,7 +514,7 @@ const NotFound = () => {
             </div>
             
             {/* Wallet Status */}
-            <div className="bg-blue-50 p-3 rounded-lg border border-dashed border-blue-200">
+            <div className="bg-blue-50 p-3 rounded-lg border border-dashed border-blue-200 transform rotate-1">
               <div className="flex items-center justify-center space-x-2 text-sm">
                 <Wallet className="w-4 h-4" />
                 <span className="font-medium text-gray-700">Wallet Status:</span>
@@ -533,13 +537,17 @@ const NotFound = () => {
             {/* Action Buttons */}
             <div className="space-y-3">
               <Link to="/" className="block">
-                <Button className="w-full hand-drawn-btn bg-blue-500 hover:bg-blue-600 text-white border-blue-600 transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2">
+                <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white border-2 border-blue-600 transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2 transform -rotate-1 hover:rotate-0"
+                        style={{
+                          filter: 'drop-shadow(2px 2px 0px rgba(0,0,0,0.2))',
+                          borderRadius: '12px'
+                        }}>
                   <Home className="w-4 h-4" />
                   <span>Take Me Home 🏠</span>
                 </Button>
               </Link>
               
-              <div className="text-xs text-gray-500 italic">
+              <div className="text-xs text-gray-500 italic transform rotate-1">
                 "Not all who wander are lost... but this page definitely is!" 📍
               </div>
             </div>
