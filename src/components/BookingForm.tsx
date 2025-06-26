@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,9 +36,15 @@ const SUPPORTED_TOKENS = [
 
 export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormProps) => {
   const { address, isConnected } = useAccount();
+  const { writeContract } = useWriteContract();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [requirements, setRequirements] = useState("");
+  const [selectedToken, setSelectedToken] = useState(SUPPORTED_TOKENS[0]);
+  const [txStatus, setTxStatus] = useState<'idle' | 'pending' | 'confirmed' | 'error'>('idle');
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (showInfo) setShowInfo(false);
     if (!isConnected || !address) {
@@ -72,12 +79,14 @@ export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormPro
         setTxHash(null);
       }
       toast.success('Transaction sent! Waiting for confirmation...');
+      
       // 2. On success, create booking in Supabase
       const { data: user, error: userError } = await supabase
         .from("users")
         .select("id")
         .eq("address", address)
         .single();
+      
       if (userError || !user) {
         const { data: newUser, error: createUserError } = await supabase
           .from("users")
@@ -90,22 +99,25 @@ export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormPro
           return;
         }
       }
+      
       const { error: bookingError } = await supabase
         .from("bookings")
         .insert({
           skill_id: parseInt(skill.id),
           requester_id: user?.id,
-          requirements: "",
+          requirements: requirements,
           status: "pending",
           payment_status: "escrowed",
           token_address: selectedToken.address,
           tx_hash: txHash,
         });
+      
       if (bookingError) {
         toast.error("Failed to create booking");
         setTxStatus('error');
         return;
       }
+      
       setTxStatus('confirmed');
       toast.success("Booking request sent successfully!");
       onBookingCreated();
@@ -146,7 +158,7 @@ export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormPro
             <span className="text-sm text-gray-600">Provider: {skill.provider.name}</span>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleFormSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">
                 Describe your requirements *
