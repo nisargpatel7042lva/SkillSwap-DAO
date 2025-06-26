@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UserProvider } from "@/components/UserContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import React, { useState, Suspense, lazy } from "react";
-import Loader from "./components/Loader";
+import LoadingSpinner from "./components/LoadingSpinner";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Index from "./pages/Index";
@@ -20,12 +20,6 @@ const Profile = lazy(() => import('./pages/Profile'));
 const ServiceDetail = lazy(() => import('./pages/ServiceDetail'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
-
-const MinimalLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gray-50">
-    <Loader />
-  </div>
-);
 
 const AppContent = () => (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -48,15 +42,13 @@ const AppContent = () => (
 );
 
 function App() {
-  const [showWeb3Provider, setShowWeb3Provider] = useState(true);
-
   return (
     <ErrorBoundary>
       <BrowserRouter>
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <Suspense fallback={<MinimalLoader />}>
+          <Suspense fallback={<LoadingSpinner fullScreen={true} message="Welcome to SkillSwap DAO! 🚀" />}>
             <Web3Provider>
               <UserProvider>
                 <AppContent />
