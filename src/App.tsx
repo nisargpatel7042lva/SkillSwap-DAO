@@ -48,7 +48,7 @@ const AppContent = () => (
 );
 
 function App() {
-  const [showWeb3Provider, setShowWeb3Provider] = useState(false);
+  const [showWeb3Provider, setShowWeb3Provider] = useState(true);
 
   return (
     <ErrorBoundary>
@@ -56,28 +56,13 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          {showWeb3Provider ? (
-            <Suspense fallback={<MinimalLoader />}>
-              <Web3Provider>
-                <UserProvider>
-                  <AppContent />
-                </UserProvider>
-              </Web3Provider>
-            </Suspense>
-          ) : (
-             <div className="min-h-screen flex flex-col bg-gray-50">
-                <Header onConnectWallet={() => setShowWeb3Provider(true)} />
-                <main className="flex-1">
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/marketplace" element={<Marketplace />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </main>
-                <Footer />
-              </div>
-          )}
+          <Suspense fallback={<MinimalLoader />}>
+            <Web3Provider>
+              <UserProvider>
+                <AppContent />
+              </UserProvider>
+            </Web3Provider>
+          </Suspense>
         </TooltipProvider>
       </BrowserRouter>
     </ErrorBoundary>
