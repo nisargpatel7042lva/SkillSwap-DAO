@@ -1,8 +1,7 @@
 
 import { useWriteContract, useAccount } from 'wagmi';
-import { SKILL_EXCHANGE_ADDRESS } from '@/lib/SkillExchange';
+import { SKILL_EXCHANGE_ADDRESS, SKILL_EXCHANGE_ABI } from '@/lib/SkillExchange';
 import { sepolia } from 'wagmi/chains';
-import abi from '@/lib/SkillExchangeABI.json';
 
 export function ListSkillButton() {
   const { writeContract, isPending, isSuccess, error, data } = useWriteContract();
@@ -14,13 +13,14 @@ export function ListSkillButton() {
         onClick={() =>
           writeContract({
             address: SKILL_EXCHANGE_ADDRESS,
-            abi,
+            abi: SKILL_EXCHANGE_ABI,
             functionName: 'listSkill',
             args: [
               'Demo Skill',
               'This is a demo skill listed from the frontend!',
               1000000000000000000n, // 1 ETH in wei
               'Demo Category',
+              '0x0000000000000000000000000000000000000000', // ETH address
             ],
             account: address,
             chain: sepolia,

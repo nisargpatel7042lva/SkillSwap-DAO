@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,11 +27,15 @@ interface BookingFormProps {
 
 export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormProps) => {
   const { address, isConnected } = useAccount();
+  const { writeContract } = useWriteContract();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [requirements, setRequirements] = useState("");
-  const [showPaymentProcessor, setShowPaymentProcessor] = useState(false);
+  const [selectedToken, setSelectedToken] = useState(SUPPORTED_TOKENS[0]);
+  const [txStatus, setTxStatus] = useState<'idle' | 'pending' | 'confirmed' | 'error'>('idle');
+  const [txHash, setTxHash] = useState<string | null>(null);
   const [showInfo, setShowInfo] = useState(false);
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (showInfo) setShowInfo(false);
     
@@ -44,20 +49,34 @@ export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormPro
       return;
     }
 
-    setShowPaymentProcessor(true);
-  };
+    setIsSubmitting(true);
 
-  const handlePaymentSuccess = async (txHash: string) => {
     try {
-      // Get or create user
+      // 1. Call contract to request service (escrow payment)
+      const price = BigInt(skill.price);
+      const args = [parseInt(skill.id), ""];
+      const txResult = await writeContract({
+        address: SKILL_EXCHANGE_ADDRESS,
+        abi: SKILL_EXCHANGE_ABI,
+        functionName: 'requestService',
+        args,
+        account: address,
+        chain: sepolia,
+        value: selectedToken.symbol === 'ETH' ? price : 0n,
+      });
+      setTxStatus('pending');
+      if (typeof txResult === 'string') {
+        setTxHash(txResult);
+      } else {
+        setTxHash(null);
+      }
+      toast.success('Transaction sent! Waiting for confirmation...');
+      // 2. On success, create booking in Supabase
       const { data: user, error: userError } = await supabase
         .from("users")
         .select("id")
         .eq("address", address)
         .single();
-
-      let userId = user?.id;
-      
       if (userError || !user) {
         const { data: newUser, error: createUserError } = await supabase
           .from("users")
@@ -71,27 +90,24 @@ export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormPro
         }
         userId = newUser.id;
       }
-
-      // Create booking record
       const { error: bookingError } = await supabase
         .from("bookings")
         .insert({
           skill_id: parseInt(skill.id),
-          requester_id: userId,
-          requirements: requirements.trim(),
+          requester_id: user?.id,
+          requirements: "",
           status: "pending",
           payment_status: "escrowed",
           tx_hash: txHash,
           amount: skill.price,
         });
-
       if (bookingError) {
         console.error("Booking creation error:", bookingError);
         toast.error("Payment successful but failed to create booking record");
         return;
       }
-
-      toast.success("Booking created successfully!");
+      setTxStatus('confirmed');
+      toast.success("Booking request sent successfully!");
       onBookingCreated();
       onClose();
     } catch (error) {
@@ -158,26 +174,7 @@ export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormPro
             </div>
           </div>
 
-          {/* Info Panel */}
-          {showInfo && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <div className="flex items-start gap-2">
-                <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium mb-1">How it works:</p>
-                  <ul className="space-y-1 text-xs">
-                    <li>• Payment is held in escrow until service completion</li>
-                    <li>• Funds are automatically released to the provider</li>
-                    <li>• You can rate the service after payment release</li>
-                    <li>• All transactions are recorded on the blockchain</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Requirements Form */}
-          <form onSubmit={handleFormSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="requirements" className="block text-sm font-medium text-gray-700 mb-2">
                 Service Requirements

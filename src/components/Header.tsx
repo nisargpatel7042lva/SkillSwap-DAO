@@ -1,14 +1,14 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, User, Wallet, Menu } from "lucide-react";
+import { Search, Menu } from "lucide-react";
 import { useState, lazy, Suspense } from "react";
 import MobileMenu from "./MobileMenu";
-import Loader from "./Loader";
 
 const Web3Buttons = lazy(() => import('./Web3Buttons'));
 
-const Header = ({ onConnectWallet }: { onConnectWallet?: () => void }) => {
+const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -72,17 +72,17 @@ const Header = ({ onConnectWallet }: { onConnectWallet?: () => void }) => {
             </button>
 
             {/* User Actions */}
-            <div className="flex items-center space-x-4">
-              {onConnectWallet ? (
-                <Button onClick={onConnectWallet} className="border-2 border-dashed border-transparent hover:border-gray-300 rounded-xl flex items-center gap-2">
-                  <Wallet className="w-4 h-4" />
-                  Connect Wallet
-                </Button>
-              ) : (
-                <Suspense fallback={<Loader />}>
-                  <Web3Buttons />
-                </Suspense>
-              )}
+            <div className="flex items-center space-x-4 min-w-[120px]">
+              <Suspense fallback={
+                <div className="flex items-center space-x-2">
+                  <div className="w-6 h-6">
+                    <div className="w-full h-full border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                  </div>
+                  <span className="text-sm text-gray-600">Loading...</span>
+                </div>
+              }>
+                <Web3Buttons />
+              </Suspense>
             </div>
           </div>
         </div>
