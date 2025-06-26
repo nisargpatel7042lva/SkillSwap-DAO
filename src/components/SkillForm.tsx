@@ -36,8 +36,9 @@ export const SkillForm = ({ onSkillCreated, onCancel }: SkillFormProps) => {
       if (error) throw error;
       const { data: publicUrlData } = supabase.storage.from('skill-images').getPublicUrl(fileName);
       setFormData((prev) => ({ ...prev, illustration_url: publicUrlData.publicUrl }));
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to upload image');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload image';
+      setErrorMsg(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -71,9 +72,10 @@ export const SkillForm = ({ onSkillCreated, onCancel }: SkillFormProps) => {
       toast.success("Skill listed successfully!");
       onSkillCreated();
       setFormData({ title: "", description: "", price: "", category: "", illustration_url: "" });
-    } catch (error: any) {
-      setErrorMsg(error.message || 'An error occurred while listing the skill');
-      toast.error(error.message || 'An error occurred while listing the skill');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred while listing the skill';
+      setErrorMsg(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

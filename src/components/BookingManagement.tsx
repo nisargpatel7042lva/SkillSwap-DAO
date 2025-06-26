@@ -1,10 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAccount, useWriteContract } from "wagmi";
+import { SKILL_EXCHANGE_ADDRESS, SKILL_EXCHANGE_ABI } from '@/lib/SkillExchange';
+import { toast } from "sonner";
 
 interface Skill {
   title: string;
@@ -23,6 +25,9 @@ interface Booking {
 const BookingManagement = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const { address, isConnected } = useAccount();
+  const [releasingId, setReleasingId] = useState<string | null>(null);
+  const { writeContractAsync } = useWriteContract();
 
   useEffect(() => {
     fetchBookings();
@@ -82,6 +87,40 @@ const BookingManagement = () => {
       fetchBookings();
     } catch (error) {
       console.error('Error:', error);
+    }
+  };
+
+  const releasePayment = async (bookingId: string) => {
+    if (!isConnected || !address) {
+      toast.error("Please connect your wallet to release payment.");
+      return;
+    }
+    setReleasingId(bookingId);
+    try {
+      // Call the contract's releasePayment function
+      await writeContractAsync({
+        address: SKILL_EXCHANGE_ADDRESS,
+        abi: SKILL_EXCHANGE_ABI,
+        functionName: 'releasePayment',
+        args: [parseInt(bookingId)],
+        account: address,
+      });
+      toast.success("Payment released on-chain! Updating status...");
+      // Update payment_status in Supabase
+      const { error } = await supabase
+        .from('bookings')
+        .update({ payment_status: 'paid' })
+        .eq('id', bookingId);
+      if (error) {
+        toast.error("Payment released but failed to update status in database.");
+      } else {
+        toast.success("Payment status updated to paid.");
+        fetchBookings();
+      }
+    } catch (err) {
+      toast.error("Failed to release payment: " + (err?.message || err));
+    } finally {
+      setReleasingId(null);
     }
   };
 
@@ -146,6 +185,16 @@ const BookingManagement = () => {
                       onClick={() => updateBookingStatus(booking.id, 'in_progress')}
                     >
                       Start Work
+                    </Button>
+                  )}
+                  {booking.status === 'completed' && booking.payment_status === 'escrowed' && (
+                    <Button
+                      size="sm"
+                      variant="success"
+                      onClick={() => releasePayment(booking.id)}
+                      disabled={releasingId === booking.id}
+                    >
+                      {releasingId === booking.id ? 'Releasing...' : 'Release Payment'}
                     </Button>
                   )}
                 </div>

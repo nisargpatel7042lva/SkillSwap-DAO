@@ -3,13 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useAccount, useWriteContract } from "wagmi";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAccount } from "wagmi";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { SKILL_EXCHANGE_ADDRESS, SKILL_EXCHANGE_ABI } from '@/lib/SkillExchange';
-import { sepolia } from 'wagmi/chains';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogTrigger, AlertDialogFooter, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { Info } from "lucide-react";
+import { PaymentProcessor } from "./PaymentProcessor";
+import { Info, Wallet, AlertTriangle } from "lucide-react";
 
 interface BookingFormProps {
   skill: {
@@ -25,21 +24,16 @@ interface BookingFormProps {
   onBookingCreated: () => void;
 }
 
-const SUPPORTED_TOKENS = [
-  { symbol: 'ETH', address: '0x0000000000000000000000000000000000000000', decimals: 18 },
-  { symbol: 'USDC', address: '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8', decimals: 6 },
-  { symbol: 'DAI', address: '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063', decimals: 18 },
-  { symbol: 'LINK', address: '0x514910771AF9Ca656af840dff83E8264EcF986CA', decimals: 18 },
-  { symbol: 'USDT', address: '0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0', decimals: 6 },
-];
-
 export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormProps) => {
   const { address, isConnected } = useAccount();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [requirements, setRequirements] = useState("");
+  const [showPaymentProcessor, setShowPaymentProcessor] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (showInfo) setShowInfo(false);
+    
     if (!isConnected || !address) {
       toast.error("Please connect your wallet first");
       return;
@@ -50,137 +44,192 @@ export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormPro
       return;
     }
 
-    setIsSubmitting(true);
+    setShowPaymentProcessor(true);
+  };
 
+  const handlePaymentSuccess = async (txHash: string) => {
     try {
-      // 1. Call contract to request service (escrow payment)
-      const price = BigInt(skill.price);
-      const args = [parseInt(skill.id), ""];
-      const txResult = await writeContract({
-        address: SKILL_EXCHANGE_ADDRESS,
-        abi: SKILL_EXCHANGE_ABI,
-        functionName: 'requestService',
-        args,
-        account: address,
-        chain: sepolia,
-        value: selectedToken.symbol === 'ETH' ? price : 0n,
-      });
-      setTxStatus('pending');
-      if (typeof txResult === 'string') {
-        setTxHash(txResult);
-      } else {
-        setTxHash(null);
-      }
-      toast.success('Transaction sent! Waiting for confirmation...');
-      // 2. On success, create booking in Supabase
+      // Get or create user
       const { data: user, error: userError } = await supabase
         .from("users")
         .select("id")
         .eq("address", address)
         .single();
+
+      let userId = user?.id;
+      
       if (userError || !user) {
         const { data: newUser, error: createUserError } = await supabase
           .from("users")
           .insert({ address })
           .select("id")
           .single();
+        
         if (createUserError || !newUser) {
           toast.error("Failed to create user profile");
-          setTxStatus('error');
           return;
         }
+        userId = newUser.id;
       }
+
+      // Create booking record
       const { error: bookingError } = await supabase
         .from("bookings")
         .insert({
           skill_id: parseInt(skill.id),
-          requester_id: user?.id,
-          requirements: "",
+          requester_id: userId,
+          requirements: requirements.trim(),
           status: "pending",
           payment_status: "escrowed",
-          token_address: selectedToken.address,
           tx_hash: txHash,
+          amount: skill.price,
         });
+
       if (bookingError) {
-        toast.error("Failed to create booking");
-        setTxStatus('error');
+        console.error("Booking creation error:", bookingError);
+        toast.error("Payment successful but failed to create booking record");
         return;
       }
-      setTxStatus('confirmed');
-      toast.success("Booking request sent successfully!");
+
+      toast.success("Booking created successfully!");
       onBookingCreated();
       onClose();
-    } catch (error: unknown) {
-      let message = "An error occurred while creating the booking";
-      if (typeof error === "object" && error && "message" in error) {
-        const err = error as { message?: string };
-        if (typeof err.message === "string") {
-          message = err.message;
-        }
-      }
-      setTxStatus('error');
-      toast.error(message);
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      console.error("Error creating booking:", error);
+      toast.error("Failed to create booking record");
     }
   };
 
-  return (
-    <Card className="w-full max-w-md mx-auto border-2 border-dashed border-gray-300">
-      <CardHeader>
-        <CardTitle className="text-xl">Book Service</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div>
-            <h3 className="font-semibold">{skill.title}</h3>
-            <Badge variant="outline" className="mt-1">{skill.price}</Badge>
+  const handlePaymentError = (error: string) => {
+    toast.error(`Payment failed: ${error}`);
+  };
+
+  if (!isConnected) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wallet className="w-5 h-5" />
+            Connect Wallet
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <Wallet className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500 mb-4">
+              Please connect your wallet to book this service.
+            </p>
+            <Button onClick={onClose} variant="outline">
+              Close
+            </Button>
           </div>
-          
-          <div className="flex items-center gap-3">
-            <img 
-              src={skill.provider.avatar} 
-              alt={skill.provider.name}
-              className="w-8 h-8 rounded-full border-2 border-dashed border-gray-300"
-            />
-            <span className="text-sm text-gray-600">Provider: {skill.provider.name}</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Book Service</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowInfo(!showInfo)}
+            >
+              <Info className="w-4 h-4" />
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          {/* Service Details */}
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <h4 className="font-medium text-sm text-gray-700">{skill.title}</h4>
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-sm font-medium">
+                {parseFloat(skill.price) / 1e18} ETH
+              </span>
+              <Badge variant="outline" className="text-xs">
+                🔷 Ethereum
+              </Badge>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Info Panel */}
+          {showInfo && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">How it works:</p>
+                  <ul className="space-y-1 text-xs">
+                    <li>• Payment is held in escrow until service completion</li>
+                    <li>• Funds are automatically released to the provider</li>
+                    <li>• You can rate the service after payment release</li>
+                    <li>• All transactions are recorded on the blockchain</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Requirements Form */}
+          <form onSubmit={handleFormSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Describe your requirements *
+              <label htmlFor="requirements" className="block text-sm font-medium text-gray-700 mb-2">
+                Service Requirements
               </label>
               <Textarea
+                id="requirements"
                 value={requirements}
                 onChange={(e) => setRequirements(e.target.value)}
-                placeholder="Please describe what you need, timeline, specific requirements..."
-                rows={4}
-                className="border-2 border-dashed border-gray-300"
+                placeholder="Describe what you need from this service..."
+                className="min-h-[100px]"
                 required
               />
             </div>
 
             <div className="flex gap-2">
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="flex-1 bg-blue-500 hover:bg-blue-600"
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={!requirements.trim()}
               >
-                {isSubmitting ? "Submitting..." : "Send Booking Request"}
+                Proceed to Payment
               </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={onClose}
-                className="border-2 border-dashed border-gray-300"
               >
                 Cancel
               </Button>
             </div>
           </form>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* Payment Processor Dialog */}
+      <Dialog open={showPaymentProcessor} onOpenChange={setShowPaymentProcessor}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Complete Payment</DialogTitle>
+          </DialogHeader>
+          <PaymentProcessor
+            skillId={skill.id}
+            skillPrice={skill.price}
+            skillTitle={skill.title}
+            requirements={requirements}
+            onPaymentSuccess={handlePaymentSuccess}
+            onPaymentError={handlePaymentError}
+            onClose={() => setShowPaymentProcessor(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
+
