@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +13,7 @@ import Index from "./pages/Index";
 import Marketplace from "./pages/Marketplace";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
+import Onboarding from "./pages/Onboarding";
 
 const Web3Provider = lazy(() => import('./components/Web3Provider'));
 const Profile = lazy(() => import('./pages/Profile'));
@@ -37,6 +39,7 @@ const AppContent = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/project/:id" element={<ProjectDetail />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>
         </main>
