@@ -27,6 +27,8 @@ import {
   type PaymentStatus
 } from '@/lib/paymentUtils';
 import { SKILL_EXCHANGE_ADDRESS, SKILL_EXCHANGE_ABI } from '@/lib/SkillExchange';
+import { createPublicClient, http } from 'viem';
+import { sepolia } from 'viem/chains';
 
 // ERC20 ABI for approvals
 const ERC20_ABI = [
@@ -54,6 +56,81 @@ interface PaymentProcessorProps {
 
 type PaymentStep = 'checking' | 'approving' | 'paying' | 'success' | 'error';
 
+const client = createPublicClient({
+  chain: sepolia,
+  transport: http()
+});
+
+function useUSDCBalance(address?: string) {
+  const [balance, setBalance] = useState<string>('0');
+  useEffect(() => {
+    if (!address) return;
+    const fetchBalance = async () => {
+      try {
+        const usdc = SUPPORTED_TOKENS.find(t => t.symbol === 'USDC');
+        if (!usdc) return;
+        const bal = await client.readContract({
+          address: usdc.address as `0x${string}`,
+          abi: [
+            {
+              "constant": true,
+              "inputs": [{ "name": "_owner", "type": "address" }],
+              "name": "balanceOf",
+              "outputs": [{ "name": "balance", "type": "uint256" }],
+              "type": "function"
+            }
+          ],
+          functionName: 'balanceOf',
+          args: [address as `0x${string}`]
+        }) as bigint;
+        setBalance((Number(bal) / 10 ** usdc.decimals).toFixed(2));
+      } catch {
+        setBalance('0');
+      }
+    };
+    fetchBalance();
+  }, [address]);
+  return balance;
+}
+
+function useAllTokenBalances(address?: string) {
+  const [balances, setBalances] = useState<{ [symbol: string]: string }>({});
+  useEffect(() => {
+    if (!address) return;
+    (async () => {
+      const results: { [symbol: string]: string } = {};
+      for (const token of SUPPORTED_TOKENS) {
+        try {
+          let balance: bigint;
+          if (token.symbol === 'ETH') {
+            balance = await client.getBalance({ address: address as `0x${string}` });
+          } else {
+            balance = await client.readContract({
+              address: token.address as `0x${string}`,
+              abi: [
+                {
+                  "constant": true,
+                  "inputs": [{ "name": "_owner", "type": "address" }],
+                  "name": "balanceOf",
+                  "outputs": [{ "name": "balance", "type": "uint256" }],
+                  "type": "function"
+                }
+              ],
+              functionName: 'balanceOf',
+              args: [address as `0x${string}`]
+            }) as bigint;
+          }
+          results[token.symbol] = (Number(balance) / 10 ** token.decimals).toFixed(4);
+        } catch {
+          results[token.symbol] = '0';
+        }
+      }
+      setBalances(results);
+    })();
+  }, [address]);
+  return balances;
+}
+
 export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
   skillId,
   skillPrice,
@@ -72,6 +149,8 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [gasEstimate, setGasEstimate] = useState<bigint>(0n);
+  const usdcBalance = useUSDCBalance(address);
+  const allBalances = useAllTokenBalances(address);
 
   // Check payment status when component mounts or token changes
   useEffect(() => {
@@ -127,6 +206,7 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
         functionName: 'approve',
         args: [SKILL_EXCHANGE_ADDRESS as `0x${string}`, requiredAmount],
         account: address,
+        chain: sepolia,
       });
 
       toast.success('Token approval successful!');
@@ -160,6 +240,7 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
         args: [parseInt(skillId), requirements],
         account: address,
         value: selectedToken.symbol === 'ETH' ? requiredAmount : 0n,
+        chain: sepolia,
       });
 
       setTxHash(result);
@@ -383,6 +464,35 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
             Estimated gas: {gasEstimate.toString()} wei
           </div>
         )}
+
+        <div className="mb-2">
+          <div className="text-xs text-gray-500">Your Wallet: <span className="font-mono">{address || 'Not connected'}</span></div>
+          <div className="text-xs text-gray-500">Balances:</div>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {SUPPORTED_TOKENS.map(token => (
+              <span key={token.symbol} className="text-xs font-mono bg-gray-100 px-2 py-1 rounded border border-gray-200">
+                {token.symbol}: {allBalances[token.symbol] || '0'}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="mb-4">
+          <label className="block text-xs font-medium mb-1 text-gray-600">Select Payment Token:</label>
+          <select
+            value={selectedToken.symbol}
+            onChange={e => {
+              const token = SUPPORTED_TOKENS.find(t => t.symbol === e.target.value);
+              if (token) setSelectedToken(token);
+            }}
+            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+          >
+            {SUPPORTED_TOKENS.map(token => (
+              <option key={token.symbol} value={token.symbol}>
+                {token.symbol} ({allBalances[token.symbol] || '0'})
+              </option>
+            ))}
+          </select>
+        </div>
       </CardContent>
     </Card>
   );

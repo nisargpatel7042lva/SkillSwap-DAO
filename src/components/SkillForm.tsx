@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAccount } from "wagmi";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { SUPPORTED_TOKENS } from '@/lib/paymentUtils';
 
 interface SkillFormProps {
   onSkillCreated: () => void;
@@ -15,30 +16,47 @@ interface SkillFormProps {
 
 export const SkillForm = ({ onSkillCreated, onCancel }: SkillFormProps) => {
   const { address } = useAccount();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    title: string;
+    description: string;
+    price: string;
+    category: string;
+    illustration_url: string;
+    token_symbol: string;
+  }>({
     title: "",
     description: "",
     price: "",
     category: "",
-    illustration_url: ""
+    illustration_url: "",
+    token_symbol: SUPPORTED_TOKENS[0].symbol
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [localImagePreview, setLocalImagePreview] = useState<string | null>(null);
 
   const handleImageUpload = async (file: File) => {
     setUploading(true);
     setErrorMsg(null);
     try {
+      // Local preview
+      setLocalImagePreview(URL.createObjectURL(file));
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
       const { data, error } = await supabase.storage.from('skill-images').upload(fileName, file);
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('bucket')) {
+          throw new Error('Image upload bucket missing or not public. Please check Supabase storage settings.');
+        }
+        throw error;
+      }
       const { data: publicUrlData } = supabase.storage.from('skill-images').getPublicUrl(fileName);
       setFormData((prev) => ({ ...prev, illustration_url: publicUrlData.publicUrl }));
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to upload image';
       setErrorMsg(errorMessage);
+      setLocalImagePreview(null);
     } finally {
       setUploading(false);
     }
@@ -62,7 +80,8 @@ export const SkillForm = ({ onSkillCreated, onCancel }: SkillFormProps) => {
           price: Number(formData.price),
           category: formData.category,
           illustration_url: formData.illustration_url || null,
-          user_id: address
+          user_id: address,
+          token_symbol: formData.token_symbol
         });
       if (error) {
         setErrorMsg(error.message || 'Failed to list skill');
@@ -71,7 +90,7 @@ export const SkillForm = ({ onSkillCreated, onCancel }: SkillFormProps) => {
       }
       toast.success("Skill listed successfully!");
       onSkillCreated();
-      setFormData({ title: "", description: "", price: "", category: "", illustration_url: "" });
+      setFormData({ title: "", description: "", price: "", category: "", illustration_url: "", token_symbol: SUPPORTED_TOKENS[0].symbol });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred while listing the skill';
       setErrorMsg(errorMessage);
@@ -112,16 +131,32 @@ export const SkillForm = ({ onSkillCreated, onCancel }: SkillFormProps) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Price (in USDC) *</label>
+            <label className="block text-sm font-medium mb-2">Price (in {formData.token_symbol}) *</label>
             <Input
               type="number"
               value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              placeholder="Enter price"
+              onChange={(e) => setFormData({ ...formData, price: e.target.value.replace(/^0+(?=\d)/, '') })}
+              placeholder={`Enter price in ${formData.token_symbol}`}
               className="border-2 border-dashed border-gray-300"
               required
               min={0}
+              step="any"
             />
+            <span className="text-xs text-gray-500">You can enter small values, e.g., 0.00001 ETH. No leading zeros.</span>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Token *</label>
+            <select
+              value={formData.token_symbol}
+              onChange={(e) => setFormData({ ...formData, token_symbol: e.target.value })}
+              className="border-2 border-dashed border-gray-300 rounded px-3 py-2 w-full"
+              required
+            >
+              {SUPPORTED_TOKENS.map(token => (
+                <option key={token.symbol} value={token.symbol}>{token.symbol}</option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -145,24 +180,27 @@ export const SkillForm = ({ onSkillCreated, onCancel }: SkillFormProps) => {
 
           <div>
             <label className="block text-sm font-medium mb-2">Image (optional)</label>
-            <Input
+            <input
               type="file"
               accept="image/*"
-              onChange={async (e) => {
-                if (e.target.files && e.target.files[0]) {
-                  await handleImageUpload(e.target.files[0]);
-                }
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (file) handleImageUpload(file);
               }}
-              className="border-2 border-dashed border-gray-300"
-              disabled={uploading}
+              className="border-2 border-dashed border-gray-300 rounded px-3 py-2 w-full"
             />
-            {uploading && <div className="text-blue-500 text-xs mt-1">Uploading image...</div>}
-            {formData.illustration_url && (
-              <img src={formData.illustration_url} alt="Preview" className="mt-2 w-32 h-32 object-cover rounded border" />
+            {localImagePreview && (
+              <div className="mb-2 mt-2">
+                <img
+                  src={localImagePreview}
+                  alt="Preview"
+                  className="w-32 h-32 object-cover rounded border border-dashed border-gray-300"
+                />
+                <div className="text-xs text-gray-500">Image preview</div>
+              </div>
             )}
+            {errorMsg && <div className="text-xs text-red-500 mt-1">{errorMsg}</div>}
           </div>
-
-          {errorMsg && <div className="text-red-500 text-sm mb-2">{errorMsg}</div>}
 
           <div className="flex gap-2">
             <Button 
