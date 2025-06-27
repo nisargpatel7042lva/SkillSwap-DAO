@@ -9,6 +9,7 @@ interface SkillCardProps {
   title: string;
   description: string;
   price: string;
+  tokenSymbol?: string;
   provider: {
     name: string;
     avatar: string;
@@ -19,7 +20,7 @@ interface SkillCardProps {
   viewMode?: "grid" | "list";
 }
 
-const SkillCard = ({ id, title, description, price, provider, category, image, viewMode = "grid" }: SkillCardProps) => {
+const SkillCard = ({ id, title, description, price, tokenSymbol = "USDC", provider, category, image, viewMode = "grid" }: SkillCardProps) => {
   const rotations = ['rotate-1', '-rotate-1', 'rotate-2', '-rotate-2'];
   const randomRotation = rotations[Math.floor(Math.random() * rotations.length)];
 
@@ -59,7 +60,7 @@ const SkillCard = ({ id, title, description, price, provider, category, image, v
               </div>
               <div className="text-right">
                 <span className="font-bold text-lg text-green-600 bg-green-50 px-3 py-1 rounded-full border border-dashed border-green-200">
-                  {price} USDC
+                  {price} {tokenSymbol}
                 </span>
               </div>
             </div>
@@ -123,7 +124,7 @@ const SkillCard = ({ id, title, description, price, provider, category, image, v
           </Badge>
           <div className="text-right">
             <span className="font-bold text-lg text-green-600 bg-green-50 px-2 py-1 rounded border border-dashed border-green-200">
-              {price} USDC
+              {price} {tokenSymbol}
             </span>
           </div>
         </div>
