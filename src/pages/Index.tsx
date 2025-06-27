@@ -1,14 +1,20 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Users, Wallet } from "lucide-react";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useRef } from "react";
 
 // Lazy load heavy components
 const Testimonials = lazy(() => import("@/components/Testimonials"));
 
 const Index = () => {
+  const howItWorksRef = useRef<HTMLDivElement>(null);
+  const handleScrollDown = () => {
+    if (howItWorksRef.current) {
+      howItWorksRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="bg-gray-50">
       {/* Hero Section */}
@@ -40,12 +46,14 @@ const Index = () => {
           
           <div className="relative">
             <div className="w-full h-96 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-3xl border-4 border-dashed border-gray-300 flex items-center justify-center transform rotate-2 doodle-shadow">
-              <img
-                src="/SkillSwap DAO Logo Design.png"
-                alt="SkillSwap DAO Logo"
-                className="w-56 h-56 object-contain opacity-80 transform -rotate-2"
-                loading="eager"
-              />
+              <Link to="/about">
+                <img
+                  src="/SkillSwap DAO Logo Design.png"
+                  alt="SkillSwap DAO Logo"
+                  className="w-56 h-56 object-contain opacity-80 transform -rotate-2 cursor-pointer transition-transform duration-200 hover:scale-105"
+                  loading="eager"
+                />
+              </Link>
             </div>
             <div className="absolute -top-4 -left-4 w-20 h-20 bg-green-100 rounded-2xl border-2 border-dashed border-green-300 flex items-center justify-center transform -rotate-12">
               <span className="text-3xl">💡</span>
@@ -60,8 +68,19 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Scroll Down Arrow Animation - fixed to bottom center */}
+      <div className="fixed left-1/2 bottom-6 transform -translate-x-1/2 z-50" title="Scroll down">
+        <div className="animate-bounce">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="feather feather-arrow-down-circle">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="8 12 12 16 16 12" />
+            <line x1="12" y1="8" x2="12" y2="16" />
+          </svg>
+        </div>
+      </div>
+
       {/* How It Works */}
-      <section className="bg-white py-16 border-t-4 border-b-4 border-dashed border-gray-300">
+      <section ref={howItWorksRef} className="bg-white py-16 border-t-4 border-b-4 border-dashed border-gray-300">
         <div className="container mx-auto px-4">
           <h2 className="text-4xl font-bold text-center text-gray-800 mb-12 scribble-underline">
             How SkillSwap Works ⚡
