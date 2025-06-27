@@ -112,7 +112,7 @@ export const SkillForm = ({ onSkillCreated, onCancel }: SkillFormProps) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Price (in SKILL) *</label>
+            <label className="block text-sm font-medium mb-2">Price (in USDC) *</label>
             <Input
               type="number"
               value={formData.price}

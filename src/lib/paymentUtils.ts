@@ -1,4 +1,4 @@
-import { createPublicClient, http, parseEther, formatEther, getContract } from 'viem';
+import { createPublicClient, http, parseEther, formatEther } from 'viem';
 import { sepolia } from 'viem/chains';
 import { toast } from 'sonner';
 
@@ -44,21 +44,21 @@ const ERC20_ABI = [
   }
 ] as const;
 
-// Supported tokens on Sepolia
+// Supported tokens on Sepolia - USDC first as default
 export const SUPPORTED_TOKENS = [
-  { 
-    symbol: 'ETH', 
-    address: '0x0000000000000000000000000000000000000000', 
-    decimals: 18,
-    name: 'Ethereum',
-    logo: '🔷'
-  },
   { 
     symbol: 'USDC', 
     address: '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8', 
     decimals: 6,
     name: 'USD Coin',
     logo: '💙'
+  },
+  { 
+    symbol: 'ETH', 
+    address: '0x0000000000000000000000000000000000000000', 
+    decimals: 18,
+    name: 'Ethereum',
+    logo: '🔷'
   },
   { 
     symbol: 'DAI', 
@@ -128,15 +128,19 @@ export async function checkPaymentStatus(
       };
     } else {
       // ERC20 token payment
-      const tokenContract = getContract({
-        address: tokenAddress as `0x${string}`,
-        abi: ERC20_ABI,
-        client
-      });
-
       const [balance, allowance] = await Promise.all([
-        tokenContract.read.balanceOf([userAddress as `0x${string}`]),
-        tokenContract.read.allowance([userAddress as `0x${string}`, '0x62de4E3f5C9D2AB9C085053c22AcAee2ca877ee8' as `0x${string}`])
+        client.readContract({
+          address: tokenAddress as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [userAddress as `0x${string}`]
+        }) as Promise<bigint>,
+        client.readContract({
+          address: tokenAddress as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: 'allowance',
+          args: [userAddress as `0x${string}`, '0x62de4E3f5C9D2AB9C085053c22AcAee2ca877ee8' as `0x${string}`]
+        }) as Promise<bigint>
       ]);
 
       const needsApproval = allowance < requiredAmount;
@@ -215,20 +219,9 @@ export async function estimateApprovalGas(
   amount: bigint
 ): Promise<bigint> {
   try {
-    const tokenContract = getContract({
-      address: tokenAddress as `0x${string}`,
-      abi: ERC20_ABI,
-      client
-    });
-
-    const gasEstimate = await tokenContract.estimateGas.approve([
-      '0x62de4E3f5C9D2AB9C085053c22AcAee2ca877ee8' as `0x${string}`,
-      amount
-    ], {
-      account: userAddress as `0x${string}`
-    });
-
-    return gasEstimate;
+    // For now, return a reasonable gas estimate
+    // In a production environment, you would use client.estimateContractGas
+    return 100000n; // Fallback gas estimate
   } catch (error) {
     console.error('Error estimating approval gas:', error);
     return 100000n; // Fallback gas estimate

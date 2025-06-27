@@ -59,7 +59,7 @@ const SkillCard = ({ id, title, description, price, provider, category, image, v
               </div>
               <div className="text-right">
                 <span className="font-bold text-lg text-green-600 bg-green-50 px-3 py-1 rounded-full border border-dashed border-green-200">
-                  {price}
+                  {price} USDC
                 </span>
               </div>
             </div>
@@ -123,7 +123,7 @@ const SkillCard = ({ id, title, description, price, provider, category, image, v
           </Badge>
           <div className="text-right">
             <span className="font-bold text-lg text-green-600 bg-green-50 px-2 py-1 rounded border border-dashed border-green-200">
-              {price}
+              {price} USDC
             </span>
           </div>
         </div>

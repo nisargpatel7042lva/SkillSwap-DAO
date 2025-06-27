@@ -180,7 +180,7 @@ const Marketplace = () => {
                 id={String(skill.id)}
                 title={skill.title}
                 description={skill.description}
-                price={skill.price + " SKILL"}
+                price={skill.price + " USDC"}
                 provider={{
                   name: skill.user?.username || "Unknown",
                   avatar: skill.user?.avatar_url || "/placeholder-avatar.jpg",

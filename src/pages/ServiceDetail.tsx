@@ -195,7 +195,7 @@ const ServiceDetail = () => {
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-green-600 bg-green-50 px-4 py-2 rounded-lg border border-dashed border-green-200">
-                      {service.price} SKILL
+                      {service.price} USDC
                     </div>
                   </div>
                 </div>
@@ -264,7 +264,7 @@ const ServiceDetail = () => {
               <CardContent className="space-y-4">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-green-600 mb-2">
-                    {service.price} SKILL
+                    {service.price} USDC
                   </div>
                   <p className="text-sm text-gray-600">Fixed price for this service</p>
                 </div>
@@ -322,7 +322,7 @@ const ServiceDetail = () => {
                   ) : (
                     <>
                       <Zap className="w-5 h-5 mr-2" />
-                      Book Now - {service.price} SKILL
+                      Book Now - {service.price} USDC
                     </>
                   )}
                 </Button>
