@@ -9,7 +9,7 @@ import { useAccount } from "wagmi";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PaymentProcessor } from "./PaymentProcessor";
-import { Info, Wallet, AlertTriangle } from "lucide-react";
+import { Info, Wallet } from "lucide-react";
 
 interface BookingFormProps {
   skill: {
@@ -27,17 +27,12 @@ interface BookingFormProps {
 
 export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormProps) => {
   const { address, isConnected } = useAccount();
-  const { writeContract } = useWriteContract();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [requirements, setRequirements] = useState("");
-  const [selectedToken, setSelectedToken] = useState(SUPPORTED_TOKENS[0]);
-  const [txStatus, setTxStatus] = useState<'idle' | 'pending' | 'confirmed' | 'error'>('idle');
-  const [txHash, setTxHash] = useState<string | null>(null);
-  const [showInfo, setShowInfo] = useState(false);
+  const [showPaymentProcessor, setShowPaymentProcessor] = useState(false);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (showInfo) setShowInfo(false);
     
     if (!isConnected || !address) {
       toast.error("Please connect your wallet first");
@@ -49,34 +44,20 @@ export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormPro
       return;
     }
 
-    setIsSubmitting(true);
+    setShowPaymentProcessor(true);
+  };
 
+  const handlePaymentSuccess = async (txHash: string) => {
     try {
-      // 1. Call contract to request service (escrow payment)
-      const price = BigInt(skill.price);
-      const args = [parseInt(skill.id), ""];
-      const txResult = await writeContract({
-        address: SKILL_EXCHANGE_ADDRESS,
-        abi: SKILL_EXCHANGE_ABI,
-        functionName: 'requestService',
-        args,
-        account: address,
-        chain: sepolia,
-        value: selectedToken.symbol === 'ETH' ? price : 0n,
-      });
-      setTxStatus('pending');
-      if (typeof txResult === 'string') {
-        setTxHash(txResult);
-      } else {
-        setTxHash(null);
-      }
-      toast.success('Transaction sent! Waiting for confirmation...');
-      // 2. On success, create booking in Supabase
+      // Get or create user
       const { data: user, error: userError } = await supabase
         .from("users")
         .select("id")
         .eq("address", address)
         .single();
+
+      let userId = user?.id;
+      
       if (userError || !user) {
         const { data: newUser, error: createUserError } = await supabase
           .from("users")
@@ -90,24 +71,28 @@ export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormPro
         }
         userId = newUser.id;
       }
+
+      // Create booking record
       const { error: bookingError } = await supabase
         .from("bookings")
         .insert({
           skill_id: parseInt(skill.id),
-          requester_id: user?.id,
-          requirements: "",
+          requester_id: userId,
+          requirements: requirements.trim(),
           status: "pending",
           payment_status: "escrowed",
           tx_hash: txHash,
           amount: skill.price,
         });
+
       if (bookingError) {
         console.error("Booking creation error:", bookingError);
         toast.error("Payment successful but failed to create booking record");
         return;
       }
-      setTxStatus('confirmed');
-      toast.success("Booking request sent successfully!");
+
+      toast.success("Service booked successfully!");
+      setShowPaymentProcessor(false);
       onBookingCreated();
       onClose();
     } catch (error) {
@@ -118,6 +103,7 @@ export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormPro
 
   const handlePaymentError = (error: string) => {
     toast.error(`Payment failed: ${error}`);
+    setShowPaymentProcessor(false);
   };
 
   if (!isConnected) {
@@ -153,7 +139,7 @@ export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormPro
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowInfo(!showInfo)}
+              onClick={() => setShowPaymentProcessor(false)}
             >
               <Info className="w-4 h-4" />
             </Button>
@@ -174,7 +160,7 @@ export const BookingForm = ({ skill, onClose, onBookingCreated }: BookingFormPro
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleFormSubmit} className="space-y-4">
             <div>
               <label htmlFor="requirements" className="block text-sm font-medium text-gray-700 mb-2">
                 Service Requirements

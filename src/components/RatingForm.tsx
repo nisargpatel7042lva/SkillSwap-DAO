@@ -6,12 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface RatingFormProps {
-  serviceId: number;
-  raterId: string;
-  onSuccess?: () => void;
+  serviceId: string;
+  onRatingSubmitted?: () => void;
 }
 
-const RatingForm = ({ serviceId, raterId, onSuccess }: RatingFormProps) => {
+export const RatingForm = ({ serviceId, onRatingSubmitted }: RatingFormProps) => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -28,8 +27,7 @@ const RatingForm = ({ serviceId, raterId, onSuccess }: RatingFormProps) => {
     try {
       const { error } = await supabase.from("ratings").insert([
         {
-          service_id: serviceId,
-          rater_id: raterId,
+          service_id: parseInt(serviceId),
           rating,
           comment,
         },
@@ -40,7 +38,7 @@ const RatingForm = ({ serviceId, raterId, onSuccess }: RatingFormProps) => {
       toast.success("Rating submitted successfully!");
       setRating(0);
       setComment("");
-      onSuccess?.();
+      onRatingSubmitted?.();
     } catch (error) {
       console.error("Error submitting rating:", error);
       toast.error("Failed to submit rating");
@@ -92,4 +90,4 @@ const RatingForm = ({ serviceId, raterId, onSuccess }: RatingFormProps) => {
   );
 };
 
-export default RatingForm; 
+ 

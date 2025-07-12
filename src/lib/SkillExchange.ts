@@ -2,10 +2,32 @@ import { createPublicClient, http } from 'viem';
 import { sepolia } from 'viem/chains';
 import SkillExchangeABI from "./SkillExchangeABI.json";
 
-export const SKILL_EXCHANGE_ADDRESS = "0x62de4E3f5C9D2AB9C085053c22AcAee2ca877ee8";
+// Get contract address from environment variable
+export const SKILL_EXCHANGE_ADDRESS = import.meta.env.VITE_SKILL_EXCHANGE_ADDRESS as `0x${string}` || "0x62de4E3f5C9D2AB9C085053c22AcAee2ca877ee8";
 export const SKILL_EXCHANGE_ABI = SkillExchangeABI.abi;
+
+// Create public client with fallback RPC
+const getRpcUrl = () => {
+  const envUrl = import.meta.env.VITE_SEPOLIA_RPC_URL;
+  if (envUrl) return envUrl;
+  
+  // Fallback to public RPCs
+  const publicRpcs = [
+    'https://rpc.sepolia.org',
+    'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
+    'https://eth-sepolia.g.alchemy.com/v2/demo'
+  ];
+  return publicRpcs[Math.floor(Math.random() * publicRpcs.length)];
+};
 
 export const publicClient = createPublicClient({
   chain: sepolia,
-  transport: http()
+  transport: http(getRpcUrl())
 });
+
+// Contract configuration
+export const CONTRACT_CONFIG = {
+  address: SKILL_EXCHANGE_ADDRESS,
+  abi: SKILL_EXCHANGE_ABI,
+  chain: sepolia,
+} as const;
