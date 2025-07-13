@@ -116,6 +116,7 @@ contract SkillExchange {
     mapping(address => uint256[]) public userRequests;
     mapping(address => uint256[]) public providerRequests;
     mapping(uint256 => QualityCheck[]) public qualityChecks;
+    mapping(uint256 => string[]) public workEvidenceFiles;
     
     // Reputation thresholds
     mapping(address => uint256) public providerDisputeCount;
@@ -162,6 +163,10 @@ contract SkillExchange {
     event SatisfactionDisputeRaised(uint256 indexed requestId, address indexed requester);
     event QualityCheckCompleted(uint256 indexed requestId, uint256 score, bool passed);
     event SatisfactionGuaranteeActivated(uint256 indexed requestId);
+    event ProviderCancelled(uint256 indexed requestId, address indexed provider, string reason);
+    event RefundForDelay(uint256 indexed requestId, address indexed requester, string reason);
+    event WorkEvidenceSubmitted(uint256 indexed requestId, string[] evidenceHashes);
+    event WorkEvidenceUpdated(uint256 indexed requestId, string[] newEvidenceHashes);
 
     constructor() {
         owner = msg.sender;
@@ -496,6 +501,134 @@ contract SkillExchange {
         require(block.timestamp >= deadline, "Auto-release time not reached");
         
         _releasePayment(requestId);
+    }
+
+    // Requester can cancel request before provider accepts (full refund)
+    function cancelRequest(uint256 requestId) external nonReentrant {
+        ServiceRequest storage req = requests[requestId];
+        Skill storage skill = skills[req.skillId];
+        require(msg.sender == req.requester, "Only requester can cancel");
+        require(!req.accepted, "Request already accepted");
+        require(!req.paymentReleased, "Payment already released");
+        require(!req.disputed, "Request is disputed");
+        
+        req.paymentReleased = true;
+        
+        // Full refund to requester
+        if (skill.tokenAddress == address(0)) {
+            payable(req.requester).transfer(skill.price);
+        } else {
+            require(IERC20(skill.tokenAddress).transfer(req.requester, skill.price), "Token refund failed");
+        }
+        
+        emit RefundIssued(requestId, req.requester, skill.price, skill.tokenAddress);
+    }
+
+    // Provider can cancel after acceptance (partial refund to requester, fee to provider)
+    function providerCancel(uint256 requestId, string memory reason) external nonReentrant {
+        ServiceRequest storage req = requests[requestId];
+        Skill storage skill = skills[req.skillId];
+        require(msg.sender == skill.provider, "Only provider can cancel");
+        require(req.accepted, "Request not accepted");
+        require(!req.completed, "Service already completed");
+        require(!req.paymentReleased, "Payment already released");
+        require(!req.disputed, "Request is disputed");
+        
+        req.paymentReleased = true;
+        
+        // Calculate refund: 80% to requester, 20% to provider (compensation for time)
+        uint256 refundAmount = (skill.price * 80) / 100;
+        uint256 providerCompensation = skill.price - refundAmount;
+        
+        if (skill.tokenAddress == address(0)) {
+            payable(req.requester).transfer(refundAmount);
+            payable(skill.provider).transfer(providerCompensation);
+        } else {
+            require(IERC20(skill.tokenAddress).transfer(req.requester, refundAmount), "Token refund failed");
+            require(IERC20(skill.tokenAddress).transfer(skill.provider, providerCompensation), "Provider compensation failed");
+        }
+        
+        emit RefundIssued(requestId, req.requester, refundAmount, skill.tokenAddress);
+        emit ProviderCancelled(requestId, skill.provider, reason);
+    }
+
+    // Requester can request refund if provider doesn't complete within deadline
+    function requestRefundForDelay(uint256 requestId) external nonReentrant {
+        ServiceRequest storage req = requests[requestId];
+        Skill storage skill = skills[req.skillId];
+        require(msg.sender == req.requester, "Only requester can request refund");
+        require(req.accepted, "Request not accepted");
+        require(!req.completed, "Service already completed");
+        require(!req.paymentReleased, "Payment already released");
+        require(block.timestamp > req.completionDeadline, "Completion deadline not passed");
+        
+        req.paymentReleased = true;
+        
+        // Full refund to requester
+        if (skill.tokenAddress == address(0)) {
+            payable(req.requester).transfer(skill.price);
+        } else {
+            require(IERC20(skill.tokenAddress).transfer(req.requester, skill.price), "Token refund failed");
+        }
+        
+        emit RefundIssued(requestId, req.requester, skill.price, skill.tokenAddress);
+        emit RefundForDelay(requestId, req.requester, "Provider missed deadline");
+    }
+
+    // Enhanced work evidence submission with multiple files
+    function submitWorkEvidence(uint256 requestId, string[] memory evidenceHashes, string memory completionNotes) external {
+        ServiceRequest storage req = requests[requestId];
+        Skill storage skill = skills[req.skillId];
+        require(msg.sender == skill.provider, "Only provider can submit evidence");
+        require(req.accepted, "Request not accepted");
+        require(!req.completed, "Already completed");
+        require(block.timestamp <= req.completionDeadline, "Completion deadline passed");
+        require(evidenceHashes.length > 0, "At least one evidence required");
+        
+        req.completed = true;
+        req.workEvidence = evidenceHashes[0]; // Store first evidence as primary
+        req.completionNotes = completionNotes;
+        req.autoReleaseTime = block.timestamp + AUTO_RELEASE_WINDOW;
+        req.verificationDeadline = block.timestamp + WORK_VERIFICATION_WINDOW;
+        
+        if (skill.satisfactionGuarantee) {
+            req.satisfactionDeadline = block.timestamp + skill.satisfactionWindow;
+        }
+        
+        // Store additional evidence hashes
+        for (uint i = 0; i < evidenceHashes.length; i++) {
+            workEvidenceFiles[requestId].push(evidenceHashes[i]);
+        }
+        
+        emit ServiceCompleted(requestId, evidenceHashes[0]);
+        emit WorkEvidenceSubmitted(requestId, evidenceHashes);
+    }
+
+    // Get all work evidence files for a request
+    function getWorkEvidenceFiles(uint256 requestId) external view returns (string[] memory) {
+        return workEvidenceFiles[requestId];
+    }
+
+    // Provider can update work evidence before verification deadline
+    function updateWorkEvidence(uint256 requestId, string[] memory newEvidenceHashes, string memory updatedNotes) external {
+        ServiceRequest storage req = requests[requestId];
+        Skill storage skill = skills[req.skillId];
+        require(msg.sender == skill.provider, "Only provider can update evidence");
+        require(req.completed, "Service not completed");
+        require(!req.workVerified, "Work already verified");
+        require(block.timestamp <= req.verificationDeadline, "Verification deadline passed");
+        require(newEvidenceHashes.length > 0, "At least one evidence required");
+        
+        req.workEvidence = newEvidenceHashes[0];
+        req.completionNotes = updatedNotes;
+        
+        // Clear and update evidence files
+        delete workEvidenceFiles[requestId];
+        for (uint i = 0; i < newEvidenceHashes.length; i++) {
+            workEvidenceFiles[requestId].push(newEvidenceHashes[i]);
+        }
+        
+        emit WorkEvidenceUpdated(requestId, newEvidenceHashes);
     }
 
     // Update provider statistics

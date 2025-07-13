@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAccount } from "wagmi";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { SUPPORTED_TOKENS } from '@/lib/paymentUtils';
+import { PRIMARY_PAYMENT_TOKEN, ethToUsdcDisplay } from '@/lib/paymentUtils';
 
 interface SkillFormProps {
   onSkillCreated: () => void;
@@ -22,14 +22,12 @@ export const SkillForm = ({ onSkillCreated, onCancel }: SkillFormProps) => {
     price: string;
     category: string;
     illustration_url: string;
-    token_symbol: string;
   }>({
     title: "",
     description: "",
     price: "",
     category: "",
     illustration_url: "",
-    token_symbol: SUPPORTED_TOKENS[0].symbol
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -81,7 +79,7 @@ export const SkillForm = ({ onSkillCreated, onCancel }: SkillFormProps) => {
           category: formData.category,
           illustration_url: formData.illustration_url || null,
           user_id: address,
-          token_symbol: formData.token_symbol
+          token_address: PRIMARY_PAYMENT_TOKEN.address // Always use ETH
         });
       if (error) {
         setErrorMsg(error.message || 'Failed to list skill');
@@ -90,7 +88,7 @@ export const SkillForm = ({ onSkillCreated, onCancel }: SkillFormProps) => {
       }
       toast.success("Skill listed successfully!");
       onSkillCreated();
-      setFormData({ title: "", description: "", price: "", category: "", illustration_url: "", token_symbol: SUPPORTED_TOKENS[0].symbol });
+      setFormData({ title: "", description: "", price: "", category: "", illustration_url: "" });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred while listing the skill';
       setErrorMsg(errorMessage);
@@ -99,6 +97,9 @@ export const SkillForm = ({ onSkillCreated, onCancel }: SkillFormProps) => {
       setIsSubmitting(false);
     }
   };
+
+  // Calculate USDC equivalent for display
+  const usdcEquivalent = formData.price ? ethToUsdcDisplay(formData.price) : "0";
 
   return (
     <Card className="border-2 border-dashed border-gray-300 bg-blue-50">
@@ -131,32 +132,25 @@ export const SkillForm = ({ onSkillCreated, onCancel }: SkillFormProps) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Price (in {formData.token_symbol}) *</label>
+            <label className="block text-sm font-medium mb-2">Price (in ETH) *</label>
             <Input
               type="number"
               value={formData.price}
               onChange={(e) => setFormData({ ...formData, price: e.target.value.replace(/^0+(?=\d)/, '') })}
-              placeholder={`Enter price in ${formData.token_symbol}`}
+              placeholder="Enter price in ETH"
               className="border-2 border-dashed border-gray-300"
               required
               min={0}
               step="any"
             />
-            <span className="text-xs text-gray-500">You can enter small values, e.g., 0.00001 ETH. No leading zeros.</span>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Token *</label>
-            <select
-              value={formData.token_symbol}
-              onChange={(e) => setFormData({ ...formData, token_symbol: e.target.value })}
-              className="border-2 border-dashed border-gray-300 rounded px-3 py-2 w-full"
-              required
-            >
-              {SUPPORTED_TOKENS.map(token => (
-                <option key={token.symbol} value={token.symbol}>{token.symbol}</option>
-              ))}
-            </select>
+            <div className="text-xs text-gray-500 mt-1">
+              <div>You can enter small values, e.g., 0.00001 ETH. No leading zeros.</div>
+              {formData.price && (
+                <div className="text-green-600 font-medium">
+                  ≈ ${usdcEquivalent} USDC
+                </div>
+              )}
+            </div>
           </div>
 
           <div>
@@ -199,21 +193,27 @@ export const SkillForm = ({ onSkillCreated, onCancel }: SkillFormProps) => {
                 <div className="text-xs text-gray-500">Image preview</div>
               </div>
             )}
-            {errorMsg && <div className="text-xs text-red-500 mt-1">{errorMsg}</div>}
+            {uploading && <div className="text-xs text-blue-500">Uploading...</div>}
           </div>
 
+          {errorMsg && (
+            <div className="text-red-500 text-sm bg-red-50 p-2 rounded border border-red-200">
+              {errorMsg}
+            </div>
+          )}
+
           <div className="flex gap-2">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isSubmitting}
-              className="bg-blue-500 hover:bg-blue-600"
+              className="flex-1 bg-blue-500 hover:bg-blue-600"
             >
               {isSubmitting ? "Listing..." : "List Skill"}
             </Button>
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
               onClick={onCancel}
+              variant="outline"
               className="border-2 border-dashed border-gray-300"
             >
               Cancel

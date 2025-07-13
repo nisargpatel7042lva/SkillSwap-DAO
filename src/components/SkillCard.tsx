@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, Clock, Users } from "lucide-react";
+import { formatPriceForDisplay } from "@/lib/paymentUtils";
 
 interface SkillCardProps {
   id: string;
@@ -20,9 +21,12 @@ interface SkillCardProps {
   viewMode?: "grid" | "list";
 }
 
-const SkillCard = ({ id, title, description, price, tokenSymbol = "USDC", provider, category, image, viewMode = "grid" }: SkillCardProps) => {
+const SkillCard = ({ id, title, description, price, tokenSymbol = "ETH", provider, category, image, viewMode = "grid" }: SkillCardProps) => {
   const rotations = ['rotate-1', '-rotate-1', 'rotate-2', '-rotate-2'];
   const randomRotation = rotations[Math.floor(Math.random() * rotations.length)];
+
+  // Format price to show ETH with USDC equivalent
+  const formattedPrice = formatPriceForDisplay(price);
 
   if (viewMode === "list") {
     return (
@@ -60,7 +64,7 @@ const SkillCard = ({ id, title, description, price, tokenSymbol = "USDC", provid
               </div>
               <div className="text-right">
                 <span className="font-bold text-lg text-green-600 bg-green-50 px-3 py-1 rounded-full border border-dashed border-green-200">
-                  {price} {tokenSymbol}
+                  {formattedPrice}
                 </span>
               </div>
             </div>
@@ -124,7 +128,7 @@ const SkillCard = ({ id, title, description, price, tokenSymbol = "USDC", provid
           </Badge>
           <div className="text-right">
             <span className="font-bold text-lg text-green-600 bg-green-50 px-2 py-1 rounded border border-dashed border-green-200">
-              {price} {tokenSymbol}
+              {formattedPrice}
             </span>
           </div>
         </div>

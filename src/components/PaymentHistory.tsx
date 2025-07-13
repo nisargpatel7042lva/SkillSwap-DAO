@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useAccount } from 'wagmi';
 import { supabase } from "@/integrations/supabase/client";
-import { formatTokenAmount, getTokenInfo } from '@/lib/paymentUtils';
+import { formatTokenAmount, getTokenInfo, formatPriceForDisplay } from '@/lib/paymentUtils';
 import { toast } from "sonner";
 
 interface PaymentTransaction {
@@ -97,22 +97,25 @@ export const PaymentHistory: React.FC = () => {
 
       if (data) {
         // Transform data to match our interface
-        const transformedTransactions: PaymentTransaction[] = data.map(booking => ({
-          id: booking.id,
-          booking_id: booking.id,
-          tx_hash: booking.tx_hash,
-          amount: booking.skills?.price || '0',
-          token_address: booking.token_address || '0x0000000000000000000000000000000000000000',
-          status: booking.payment_status === 'paid' ? 'confirmed' : 
-                 booking.payment_status === 'escrowed' ? 'pending' : 'failed',
-          created_at: booking.created_at,
-          booking: {
-            requirements: booking.requirements,
-            status: booking.status,
-            payment_status: booking.payment_status,
-            skills: booking.skills || { title: 'Unknown', price: '0' }
-          }
-        }));
+        const transformedTransactions: PaymentTransaction[] = data.map(booking => {
+          const skills = Array.isArray(booking.skills) ? booking.skills[0] : booking.skills;
+          return {
+            id: booking.id,
+            booking_id: booking.id,
+            tx_hash: booking.tx_hash,
+            amount: skills?.price || '0',
+            token_address: booking.token_address || '0x0000000000000000000000000000000000000000',
+            status: booking.payment_status === 'paid' ? 'confirmed' : 
+                   booking.payment_status === 'escrowed' ? 'pending' : 'failed',
+            created_at: booking.created_at,
+            booking: {
+              requirements: booking.requirements,
+              status: booking.status,
+              payment_status: booking.payment_status,
+              skills: skills || { title: 'Unknown', price: '0' }
+            }
+          };
+        });
 
         setTransactions(transformedTransactions);
         calculateStats(transformedTransactions);
@@ -238,7 +241,7 @@ export const PaymentHistory: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Amount</p>
-                <p className="text-2xl font-bold">{stats.totalAmount} ETH</p>
+                <p className="text-2xl font-bold">{formatPriceForDisplay(stats.totalAmount)}</p>
               </div>
               <Wallet className="w-8 h-8 text-green-500" />
             </div>
@@ -314,7 +317,7 @@ export const PaymentHistory: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <span className="text-lg">{token.logo}</span>
                           <span className="font-medium">
-                            {formatTokenAmount(BigInt(transaction.amount), 18)} {token.symbol}
+                            {formatPriceForDisplay(transaction.amount)}
                           </span>
                         </div>
                       </TableCell>
@@ -383,7 +386,7 @@ export const PaymentHistory: React.FC = () => {
                 <div>
                   <p className="text-gray-500">Amount</p>
                   <p className="font-medium">
-                    {formatTokenAmount(BigInt(selectedTransaction.amount), 18)} {getTokenInfo(selectedTransaction.token_address).symbol}
+                    {formatPriceForDisplay(selectedTransaction.amount)}
                   </p>
                 </div>
                 <div>

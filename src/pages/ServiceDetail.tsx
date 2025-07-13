@@ -84,28 +84,24 @@ const ServiceDetail = () => {
         .eq("address", address)
         .single();
 
-      let userId = user?.id;
-      
       if (userError || !user) {
         const { data: newUser, error: createUserError } = await supabase
           .from("users")
           .insert({ address })
           .select("id")
           .single();
-        
         if (createUserError || !newUser) {
           toast.error("Failed to create user profile");
           return;
         }
-        userId = newUser.id;
       }
 
-      // Create booking record
+      // Create booking record (use address for requester_id)
       const { error: bookingError } = await supabase
         .from("bookings")
         .insert({
           skill_id: service!.id,
-          requester_id: userId,
+          requester_id: address, // <-- Use wallet address
           requirements: requirements.trim(),
           status: "pending",
           payment_status: "escrowed",

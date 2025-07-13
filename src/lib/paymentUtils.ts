@@ -44,22 +44,27 @@ const ERC20_ABI = [
   }
 ] as const;
 
-// Supported tokens on Sepolia - USDC first as default
+// ETH as primary payment token, USDC for display
+export const PRIMARY_PAYMENT_TOKEN = {
+  symbol: 'ETH',
+  address: '0x0000000000000000000000000000000000000000',
+  decimals: 18,
+  name: 'Ethereum',
+  logo: '🔷'
+} as const;
+
+export const DISPLAY_TOKEN = {
+  symbol: 'USDC',
+  address: '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8',
+  decimals: 6,
+  name: 'USD Coin',
+  logo: '💙'
+} as const;
+
+// Supported tokens for reference (ETH is primary)
 export const SUPPORTED_TOKENS = [
-  { 
-    symbol: 'USDC', 
-    address: '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8', 
-    decimals: 6,
-    name: 'USD Coin',
-    logo: '💙'
-  },
-  { 
-    symbol: 'ETH', 
-    address: '0x0000000000000000000000000000000000000000', 
-    decimals: 18,
-    name: 'Ethereum',
-    logo: '🔷'
-  },
+  PRIMARY_PAYMENT_TOKEN,
+  DISPLAY_TOKEN,
   { 
     symbol: 'DAI', 
     address: '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063', 
@@ -106,8 +111,37 @@ export interface PaymentStatus {
   error?: string;
 }
 
+// Mock ETH to USDC conversion rate (in real app, this would come from price oracle)
+const ETH_TO_USDC_RATE = 2500; // 1 ETH = 2500 USDC
+
 /**
- * Check if user has sufficient balance and allowance for a token payment
+ * Convert ETH amount to USDC display amount
+ */
+export function ethToUsdcDisplay(ethAmount: string): string {
+  const ethValue = parseFloat(ethAmount);
+  const usdcValue = ethValue * ETH_TO_USDC_RATE;
+  return usdcValue.toFixed(2);
+}
+
+/**
+ * Convert USDC display amount to ETH amount
+ */
+export function usdcToEthAmount(usdcAmount: string): string {
+  const usdcValue = parseFloat(usdcAmount);
+  const ethValue = usdcValue / ETH_TO_USDC_RATE;
+  return ethValue.toFixed(6);
+}
+
+/**
+ * Format price for display (shows USDC equivalent)
+ */
+export function formatPriceForDisplay(ethAmount: string): string {
+  const usdcDisplay = ethToUsdcDisplay(ethAmount);
+  return `${ethAmount} ETH (≈ $${usdcDisplay})`;
+}
+
+/**
+ * Check if user has sufficient balance for ETH payment
  */
 export async function checkPaymentStatus(
   tokenAddress: string,
@@ -115,47 +149,27 @@ export async function checkPaymentStatus(
   requiredAmount: bigint
 ): Promise<PaymentStatus> {
   try {
-    if (tokenAddress === '0x0000000000000000000000000000000000000000') {
-      // ETH payment
-      const balance = await client.getBalance({ address: userAddress as `0x${string}` });
+    // Only support ETH payments
+    if (tokenAddress !== PRIMARY_PAYMENT_TOKEN.address) {
       return {
-        canPay: balance >= requiredAmount,
+        canPay: false,
         needsApproval: false,
-        currentBalance: balance,
+        currentBalance: 0n,
         requiredAmount,
         allowance: 0n,
-        error: balance < requiredAmount ? 'Insufficient ETH balance' : undefined
-      };
-    } else {
-      // ERC20 token payment
-      const [balance, allowance] = await Promise.all([
-        client.readContract({
-          address: tokenAddress as `0x${string}`,
-          abi: ERC20_ABI,
-          functionName: 'balanceOf',
-          args: [userAddress as `0x${string}`]
-        }) as Promise<bigint>,
-        client.readContract({
-          address: tokenAddress as `0x${string}`,
-          abi: ERC20_ABI,
-          functionName: 'allowance',
-          args: [userAddress as `0x${string}`, '0x62de4E3f5C9D2AB9C085053c22AcAee2ca877ee8' as `0x${string}`]
-        }) as Promise<bigint>
-      ]);
-
-      const needsApproval = allowance < requiredAmount;
-      const canPay = balance >= requiredAmount && !needsApproval;
-
-      return {
-        canPay,
-        needsApproval,
-        currentBalance: balance,
-        requiredAmount,
-        allowance,
-        error: balance < requiredAmount ? 'Insufficient token balance' : 
-               needsApproval ? 'Token approval required' : undefined
+        error: 'Only ETH payments are supported'
       };
     }
+
+    const balance = await client.getBalance({ address: userAddress as `0x${string}` });
+    return {
+      canPay: balance >= requiredAmount,
+      needsApproval: false,
+      currentBalance: balance,
+      requiredAmount,
+      allowance: 0n,
+      error: balance < requiredAmount ? 'Insufficient ETH balance' : undefined
+    };
   } catch (error) {
     console.error('Error checking payment status:', error);
     return {
@@ -207,11 +221,11 @@ export function getTokenInfo(tokenAddress: string): TokenInfo | undefined {
  * Get token info by symbol
  */
 export function getTokenBySymbol(symbol: string): TokenInfo | undefined {
-  return SUPPORTED_TOKENS.find(token => token.symbol.toUpperCase() === symbol.toUpperCase());
+  return SUPPORTED_TOKENS.find(token => token.symbol.toLowerCase() === symbol.toLowerCase());
 }
 
 /**
- * Calculate gas estimate for token approval
+ * Estimate gas for token approval
  */
 export async function estimateApprovalGas(
   tokenAddress: string,
@@ -219,12 +233,23 @@ export async function estimateApprovalGas(
   amount: bigint
 ): Promise<bigint> {
   try {
-    // For now, return a reasonable gas estimate
-    // In a production environment, you would use client.estimateContractGas
-    return 100000n; // Fallback gas estimate
+    // For ETH, no approval needed
+    if (tokenAddress === PRIMARY_PAYMENT_TOKEN.address) {
+      return 0n;
+    }
+
+    const gasEstimate = await client.estimateContractGas({
+      address: tokenAddress as `0x${string}`,
+      abi: ERC20_ABI,
+      functionName: 'approve',
+      args: ['0x62de4E3f5C9D2AB9C085053c22AcAee2ca877ee8' as `0x${string}`, amount],
+      account: userAddress as `0x${string}`
+    });
+
+    return gasEstimate;
   } catch (error) {
     console.error('Error estimating approval gas:', error);
-    return 100000n; // Fallback gas estimate
+    return 50000n; // Default estimate
   }
 }
 
@@ -236,35 +261,40 @@ export function validatePaymentAmount(amount: string, tokenInfo: TokenInfo): str
     return 'Amount must be greater than 0';
   }
 
-  try {
-    const parsedAmount = parseTokenAmount(amount, tokenInfo.decimals);
-    if (parsedAmount === 0n) {
-      return 'Amount must be greater than 0';
+  const numAmount = parseFloat(amount);
+  if (isNaN(numAmount) || numAmount <= 0) {
+    return 'Invalid amount';
+  }
+
+  // For ETH, check reasonable limits
+  if (tokenInfo.symbol === 'ETH') {
+    if (numAmount > 10) {
+      return 'Amount too high (max 10 ETH)';
     }
-  } catch (error) {
-    return 'Invalid amount format';
+    if (numAmount < 0.001) {
+      return 'Amount too low (min 0.001 ETH)';
+    }
   }
 
   return null;
 }
 
 /**
- * Get payment summary for display
+ * Get payment summary with USDC equivalent
  */
 export function getPaymentSummary(
   amount: string,
   tokenInfo: TokenInfo,
   paymentStatus: PaymentStatus
 ) {
-  const formattedAmount = formatTokenAmount(paymentStatus.requiredAmount, tokenInfo.decimals);
-  const formattedBalance = formatTokenAmount(paymentStatus.currentBalance, tokenInfo.decimals);
+  const usdcEquivalent = ethToUsdcDisplay(amount);
   
   return {
-    amount: formattedAmount,
-    balance: formattedBalance,
-    symbol: tokenInfo.symbol,
+    amount,
+    tokenSymbol: tokenInfo.symbol,
+    usdcEquivalent,
     canPay: paymentStatus.canPay,
-    needsApproval: paymentStatus.needsApproval,
-    error: paymentStatus.error
+    error: paymentStatus.error,
+    displayText: `${amount} ${tokenInfo.symbol} (≈ $${usdcEquivalent})`
   };
 } 

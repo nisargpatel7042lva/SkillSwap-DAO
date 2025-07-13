@@ -23,9 +23,23 @@ interface Project {
   due_date: string;
 }
 
+interface Booking {
+  id: string;
+  requirements: string;
+  status: string;
+  payment_status: string;
+  created_at: string;
+  skills: {
+    title: string;
+    price: number;
+  };
+  role?: 'requester' | 'provider';
+}
+
 const Dashboard = () => {
   const { address, isConnected } = useAccount();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showSkillForm, setShowSkillForm] = useState(false);
@@ -35,6 +49,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (!address) return;
     fetchProjects();
+    fetchBookings();
     fetchMySkills(address, setMySkills, setLoadingSkills);
   }, [address]);
 
@@ -62,6 +77,75 @@ const Dashboard = () => {
     }
   };
 
+  const fetchBookings = async () => {
+    if (!address) return;
+    
+    try {
+      // Get user's bookings as requester
+      const { data: requesterBookings, error: requesterError } = await supabase
+        .from("bookings")
+        .select(`
+          id,
+          requirements,
+          status,
+          payment_status,
+          created_at,
+          skills (
+            title,
+            price
+          )
+        `)
+        .eq("requester_id", address)
+        .order("created_at", { ascending: false });
+
+      if (requesterError) {
+        console.error("Error fetching requester bookings:", requesterError);
+        return;
+      }
+
+      // Get user's bookings as provider (through skills)
+      const { data: providerBookings, error: providerError } = await supabase
+        .from("bookings")
+        .select(`
+          id,
+          requirements,
+          status,
+          payment_status,
+          created_at,
+          skills!inner (
+            title,
+            price,
+            user_id
+          )
+        `)
+        .eq("skills.user_id", address)
+        .order("created_at", { ascending: false });
+
+      if (providerError) {
+        console.error("Error fetching provider bookings:", providerError);
+        return;
+      }
+
+      // Combine and transform bookings
+      const allBookings = [
+        ...(requesterBookings || []).map(b => ({ 
+          ...b, 
+          role: 'requester' as const,
+          skills: Array.isArray(b.skills) ? b.skills[0] : b.skills
+        })),
+        ...(providerBookings || []).map(b => ({ 
+          ...b, 
+          role: 'provider' as const,
+          skills: Array.isArray(b.skills) ? b.skills[0] : b.skills
+        }))
+      ];
+
+      setBookings(allBookings);
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+    }
+  };
+
   const handleProjectCreated = () => {
     setShowNewProjectForm(false);
     fetchProjects();
@@ -82,9 +166,11 @@ const Dashboard = () => {
     );
   }
 
-  const activeProjects = projects.filter(p => p.status === "In Progress").length;
-  const completedProjects = projects.filter(p => p.status === "Completed").length;
-  const pendingProjects = projects.filter(p => p.status === "Planning").length;
+  // Calculate stats from bookings instead of projects
+  const activeBookings = bookings.filter(b => b.status === "in_progress" || b.status === "accepted").length;
+  const completedBookings = bookings.filter(b => b.status === "completed").length;
+  const pendingBookings = bookings.filter(b => b.status === "pending").length;
+  const totalBookings = bookings.length;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -126,28 +212,28 @@ const Dashboard = () => {
         <Card className="border-2 border-dashed border-blue-300 bg-blue-50 transform rotate-1">
           <CardContent className="p-6 text-center">
             <TrendingUp className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-blue-700">{activeProjects}</div>
+            <div className="text-2xl font-bold text-blue-700">{activeBookings}</div>
             <div className="text-sm text-blue-600">Active Projects</div>
           </CardContent>
         </Card>
         <Card className="border-2 border-dashed border-green-300 bg-green-50 transform -rotate-1">
           <CardContent className="p-6 text-center">
             <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-green-700">{completedProjects}</div>
+            <div className="text-2xl font-bold text-green-700">{completedBookings}</div>
             <div className="text-sm text-green-600">Completed</div>
           </CardContent>
         </Card>
         <Card className="border-2 border-dashed border-purple-300 bg-purple-50 transform rotate-1">
           <CardContent className="p-6 text-center">
             <Clock className="w-8 h-8 text-purple-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-purple-700">{pendingProjects}</div>
+            <div className="text-2xl font-bold text-purple-700">{pendingBookings}</div>
             <div className="text-sm text-purple-600">Planning</div>
           </CardContent>
         </Card>
         <Card className="border-2 border-dashed border-orange-300 bg-orange-50 transform -rotate-1">
           <CardContent className="p-6 text-center">
             <Calendar className="w-8 h-8 text-orange-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-orange-700">{projects.length}</div>
+            <div className="text-2xl font-bold text-orange-700">{totalBookings}</div>
             <div className="text-sm text-orange-600">Total Projects</div>
           </CardContent>
         </Card>
@@ -263,7 +349,7 @@ const Dashboard = () => {
                     id={String(skill.id)}
                     title={skill.title}
                     description={skill.description}
-                    price={skill.price + " SKILL"}
+                    price={skill.price + " ETH"}
                     provider={{ name: "You", avatar: skill.illustration_url || "/placeholder-avatar.jpg", rating: 0 }}
                     category={skill.category || "Other"}
                     image={skill.illustration_url || undefined}

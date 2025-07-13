@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Skills table
 CREATE TABLE IF NOT EXISTS skills (
   id serial PRIMARY KEY,
-  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  user_id text REFERENCES users(address) ON DELETE CASCADE,
   title text NOT NULL,
   description text,
   price numeric NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS skills (
 CREATE TABLE IF NOT EXISTS bookings (
   id serial PRIMARY KEY,
   skill_id integer REFERENCES skills(id) ON DELETE CASCADE,
-  requester_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  requester_id text REFERENCES users(address) ON DELETE CASCADE,
   requirements text,
   status text DEFAULT 'pending', -- pending, accepted, in_progress, completed, cancelled
   payment_status text DEFAULT 'unpaid', -- unpaid, escrowed, paid, refunded
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS bookings (
 CREATE TABLE IF NOT EXISTS ratings (
   id serial PRIMARY KEY,
   service_id integer REFERENCES bookings(id) ON DELETE CASCADE,
-  rater_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  rater_id text REFERENCES users(address) ON DELETE CASCADE,
   rating integer CHECK (rating >= 1 AND rating <= 5),
   comment text,
   created_at timestamp with time zone DEFAULT timezone('utc', now())
