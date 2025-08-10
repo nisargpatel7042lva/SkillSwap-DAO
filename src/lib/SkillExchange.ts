@@ -11,10 +11,10 @@ const getRpcUrl = () => {
   const envUrl = import.meta.env.VITE_SEPOLIA_RPC_URL;
   if (envUrl) return envUrl;
   
-  // Fallback to public RPCs
+  // Fallback to public RPCs (no API keys)
   const publicRpcs = [
     'https://rpc.sepolia.org',
-    'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
+    'https://sepolia.drpc.org',
     'https://eth-sepolia.g.alchemy.com/v2/demo'
   ];
   return publicRpcs[Math.floor(Math.random() * publicRpcs.length)];
