@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useAccount } from 'wagmi';
 import { PaymentHistory } from './PaymentHistory';
-import { BookingManagement } from './BookingManagement';
+import BookingManagement from './BookingManagement';
 import { toast } from "sonner";
 
 interface PaymentStats {

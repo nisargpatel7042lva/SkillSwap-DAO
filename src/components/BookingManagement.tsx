@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import EscrowManager from "./EscrowManager";
 
 interface Skill {
   title: string;
@@ -412,6 +413,9 @@ const BookingManagement = () => {
                       )}
                     </>
                   )}
+                </div>
+                <div className="mt-4">
+                  <EscrowManager bookingId={booking.id} />
                 </div>
               </CardContent>
             </Card>
